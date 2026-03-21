@@ -36,6 +36,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         .str_buf = str, .str_len = strlen(str) \
     }
 
+#define ER_STRING_EQ(s1, s2)         \
+    ((s1).str_len == (s2).str_len && \
+     0 == strncmp((s1).str_buf, (s2).str_buf, (s1).str_len))
+
+#define ER_STRING_EQ_LITERAL(s1, literal) \
+    ((s1).str_len == strlen(literal) &&   \
+     strncmp((s1).str_buf, literal, strlen(literal)))
+
 typedef uint8_t  ER_u8;
 typedef uint16_t ER_u16;
 typedef uint32_t ER_u32;

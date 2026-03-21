@@ -27,7 +27,7 @@ HEADER_DEPS := $(addprefix obj/,$(CFILES:.c=.c.d) $(ASFILES:.S=.S.d))
 all: bin/$(OUTPUT)
 
 bin/$(OUTPUT): GNUmakefile $(OBJ)
-	@echo "    LD  " $(OBJ)
+	@echo "    LD " $(OBJ)
 	@mkdir -p "$$(dirname $@)"
 	@$(LD) $(OBJ) -o $@
 

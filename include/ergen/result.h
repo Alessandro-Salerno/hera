@@ -27,17 +27,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#define ER_RESULT(type)       \
-    struct {                  \
-        type      res_val;    \
-        ER_Status res_status; \
+#define ER_RESULT(type)          \
+    struct {                     \
+        ER_Status res_status;    \
+        union {                  \
+            type        res_val; \
+            const char *res_err; \
+        };                       \
     }
 
-#define ER_RESULT_UNWRAP(result, msg, ...)     \
+#define ER_RESULT_UNWRAP(result)               \
     er_result_unwrap_impl(&(result).res_val,   \
                           (result).res_status, \
-                          msg,                 \
-                          ##__VA_ARGS__)
+                          (result).res_err)
 
 #define ER_RESULT_STATUS(result) ((result).res_status)
 #define ER_RESULT_OK(result)     (ER_STATUS_OK == ER_RESULT_STATUS(result))
@@ -48,5 +50,4 @@ typedef enum ER_Status {
     ER_STATUS_ERR
 } ER_Status;
 
-void *
-er_result_unwrap_impl(void *val, ER_Status status, const char *message, ...);
+void *er_result_unwrap_impl(void *val, ER_Status status, const char *message);

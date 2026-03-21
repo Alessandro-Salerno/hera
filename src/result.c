@@ -26,21 +26,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <ergen/result.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-void *
-er_result_unwrap_impl(void *val, ER_Status status, const char *message, ...) {
+void *er_result_unwrap_impl(void *val, ER_Status status, const char *message) {
     if (ER_STATUS_OK == status) {
         return val;
     }
 
-    fprintf(stderr, "fatal error: ");
-    va_list args;
-    va_start(args, message);
-    vfprintf(stderr, message, args);
-    va_end(args);
+    fprintf(stderr, "unwrap error: %s", message);
     puts(""); // empty line
 
     exit(EXIT_FAILURE);
