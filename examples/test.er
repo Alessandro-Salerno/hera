@@ -1,0 +1,16 @@
+total entity thingy {
+    attribute x;
+    attribute y key;
+    attribute z;
+}
+
+entity other specifies "thingy with spaces" {
+    attribute w;
+}
+
+relation rel {
+    entity thingy (1, N);
+    entity other (0, 1);
+
+    attribute bruh;
+}

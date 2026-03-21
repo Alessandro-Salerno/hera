@@ -151,7 +151,7 @@ static LexerInstruction lexer_base_handler(char c) {
         case '\t':
             return (LexerInstruction){.li_handler    = lexer_base_handler,
                                       .li_charaction = LEXER_ACTION_DISCARD,
-                                      .li_tokaction  = LEXER_ACTION_IGNORE,
+                                      .li_tokaction  = LEXER_ACTION_DISCARD,
                                       .li_toktype    = ER_TOKEN_TYPE_NONE};
     }
 
@@ -201,7 +201,7 @@ static LexerInstruction lexer_base_handler(char c) {
     if ('"' == c) {
         return (LexerInstruction){.li_handler    = lexer_string_handler,
                                   .li_charaction = LEXER_ACTION_DISCARD,
-                                  .li_tokaction  = LEXER_ACTION_IGNORE,
+                                  .li_tokaction  = LEXER_ACTION_DISCARD,
                                   .li_toktype    = ER_TOKEN_TYPE_NONE};
     }
 
@@ -316,7 +316,7 @@ ER_LexerResult er_lexer_run(ER_String input) {
     while ((fetch_result = lexer_consume(&lexer)), ER_RESULT_OK(fetch_result)) {
         char   curr_char = ER_RESULT_GET(fetch_result);
         ER_u64 curr_off  = lexer.ls_next - 1;
-        ER_u64 eff_off   = curr_off;
+        ER_u64 end_off   = curr_off + 1;
         ER_u64 curr_row  = lexer.ls_row;
         ER_u64 curr_col  = lexer.ls_col;
 
@@ -348,11 +348,11 @@ ER_LexerResult er_lexer_run(ER_String input) {
             case LEXER_ACTION_DISCARD:
                 assert(0 != curr_off ||
                        LEXER_ACTION_PUSH != instruction.li_tokaction);
-                eff_off--;
+                end_off--;
                 break;
             case LEXER_ACTION_IGNORE:
-                assert(LEXER_ACTION_PUSH != instruction.li_tokaction);
                 lexer_step_back(&lexer);
+                end_off--;
                 break;
             case LEXER_ACTION_PUSH:
                 break;
@@ -367,13 +367,15 @@ ER_LexerResult er_lexer_run(ER_String input) {
             // invariant: length and type assignments always happen here
             // alongside push
             case LEXER_ACTION_PUSH:
-                curr_token.tok_value.str_len = eff_off - curr_token.tok_off;
+                curr_token.tok_value.str_len = end_off - curr_token.tok_off;
                 curr_token.tok_type = lexer_token_type(curr_token.tok_value,
                                                        instruction.li_toktype);
                 *EZLD_ARRAY_PUSH(tokens) = curr_token;
                 curr_token_action        = LEXER_ACTION_DISCARD;
                 break;
         }
+
+        handler = instruction.li_handler;
     }
 
     return (ER_LexerResult){.res_status = ER_STATUS_OK, .res_val = tokens};
