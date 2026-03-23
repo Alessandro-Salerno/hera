@@ -174,7 +174,7 @@ static LexerInstruction lexer_base_handler(char c) {
             sc_token_type = ER_TOKEN_TYPE_RBLOCK;
             break;
         case ',':
-            sc_token_type = ER_TOKEN_TYPE_RBLOCK;
+            sc_token_type = ER_TOKEN_TYPE_COMMA;
             break;
         case EOF:
             sc_token_type = ER_TOKEN_TYPE_EOF;

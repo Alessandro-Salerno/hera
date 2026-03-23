@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <assert.h>
 #include <ergen/lexer.h>
+#include <ergen/parser.h>
 #include <stdio.h>
 
 int main(int argc, const char *const argv[]) {
@@ -65,6 +66,9 @@ int main(int argc, const char *const argv[]) {
                ER_STRING_PRINTF(token->tok_value),
                token->tok_type);
     }
+
+    ER_ParserResult par_res  = er_parser_run(tokens);
+    ER_ASTRootNode *ast_root = ER_RESULT_UNWRAP(par_res);
 
     return 0;
 }

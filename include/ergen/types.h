@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define ER_STRING_EQ_LITERAL(s1, literal) \
     ((s1).str_len == strlen(literal) &&   \
-     strncmp((s1).str_buf, literal, strlen(literal)))
+     0 == strncmp((s1).str_buf, literal, strlen(literal)))
 
 #define ER_STRING_PRINTF(s) (int)(s).str_len, (s).str_buf
 
