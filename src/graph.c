@@ -154,8 +154,8 @@ ER_GraphResult er_graph_compute(ER_ASTRootNode *ast_root) {
     }
 
     // link entities to their parent
-    ER_GraphEntity *graph_ent, *_;
-    HASH_ITER(gen_hh, graph.gr_entities, graph_ent, _) {
+    ER_GraphEntity *graph_ent, *graph_ent_tmp;
+    HASH_ITER(gen_hh, graph.gr_entities, graph_ent, graph_ent_tmp) {
         if (!(graph_ent->gen_astnode->ent_flags & ER_ENTITY_FLAGS_SPECIFIES)) {
             continue;
         }
@@ -171,7 +171,31 @@ ER_GraphResult er_graph_compute(ER_ASTRootNode *ast_root) {
         graph_ent->gen_specifies  = specifies;
     }
 
-    // TODO: link relations
+    // link relations with entities
+    ER_GraphRelation *graph_rel, *graph_rel_tmp;
+    HASH_ITER(gre_hh, graph.gr_relations, graph_rel, graph_rel_tmp) {
+        ER_ASTNode *ref_astnode;
+        TAILQ_FOREACH(ref_astnode,
+                      &graph_rel->gre_astnode->rel_entities,
+                      an_link) {
+            assert(ER_AST_NODE_TYPE_REFERENCE == ref_astnode->an_type);
+            ER_ASTReferenceNode *ref  = (void *)ref_astnode;
+            ER_GraphEdge        *edge = calloc(1, sizeof(*edge));
+            assert(NULL != edge);
+
+            GraphEntityResult get_res = graph_get_entity(&graph,
+                                                         ref->ref_entname);
+            if (!ER_RESULT_OK(get_res)) {
+                return graph_err(ER_RESULT_ERROR(get_res));
+            }
+
+            ER_GraphEntity *ref_entity = ER_RESULT_GET(get_res);
+            edge->ged_astnode          = ref;
+            edge->ged_entity           = ref_entity;
+            edge->ged_relation         = graph_rel;
+            TAILQ_INSERT_TAIL(&graph_rel->gre_edges, edge, ged_link);
+        }
+    }
 
     return graph_ok(graph);
 }
