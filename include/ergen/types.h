@@ -38,11 +38,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define ER_STRING_EQ(s1, s2)         \
     ((s1).str_len == (s2).str_len && \
-     0 == strncmp((s1).str_buf, (s2).str_buf, (s1).str_len))
+     0 == memcmp((s1).str_buf, (s2).str_buf, (s1).str_len))
 
 #define ER_STRING_EQ_LITERAL(s1, literal) \
     ((s1).str_len == strlen(literal) &&   \
-     0 == strncmp((s1).str_buf, literal, strlen(literal)))
+     0 == memcmp((s1).str_buf, literal, strlen(literal)))
 
 #define ER_STRING_PRINTF(s) (int)(s).str_len, (s).str_buf
 

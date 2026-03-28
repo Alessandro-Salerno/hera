@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <assert.h>
+#include <ergen/graph.h>
 #include <ergen/lexer.h>
 #include <ergen/parser.h>
 #include <stdio.h>
@@ -59,16 +60,19 @@ int main(int argc, const char *const argv[]) {
     ER_LexerResult lex_res = er_lexer_run(s);
     ER_TokenList   tokens  = *(ER_TokenList *)ER_RESULT_UNWRAP(lex_res);
 
-    for (ER_u64 i = 0; i < EZLD_ARRAY_LENGTH(tokens); i++) {
+    /*for (ER_u64 i = 0; i < EZLD_ARRAY_LENGTH(tokens); i++) {
         ER_Token *token = EZLD_ARRAY_AT(tokens, i);
         printf("%zu token(%.*s, %#x)\n",
                i,
                ER_STRING_PRINTF(token->tok_value),
                token->tok_type);
-    }
+    }*/
 
     ER_ParserResult par_res  = er_parser_run(tokens);
     ER_ASTRootNode *ast_root = ER_RESULT_UNWRAP(par_res);
 
-    return 0;
+    ER_GraphResult graph_res = er_graph_compute(ast_root);
+    ER_Graph      *graph     = ER_RESULT_UNWRAP(graph_res);
+
+    return EXIT_SUCCESS;
 }

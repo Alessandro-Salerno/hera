@@ -4,6 +4,10 @@ total entity thingy {
     attribute z;
 }
 
+entity "thingy with spaces" {
+
+}
+
 entity other specifies "thingy with spaces" {
     attribute w;
 }

@@ -27,28 +27,41 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#define ER_RESULT(type)          \
-    struct {                     \
-        ER_Status res_status;    \
-        union {                  \
-            type        res_val; \
-            const char *res_err; \
-        };                       \
-    }
+#include <bsd/queue.h>
+#include <ergen/parser.h>
+#include <ergen/result.h>
+#include <ergen/types.h>
+#include <ezld/array.h>
+#include <uthash/uthash.h>
 
-#define ER_RESULT_UNWRAP(result)               \
-    er_result_unwrap_impl(&(result).res_val,   \
-                          (result).res_status, \
-                          (result).res_err)
+typedef struct ER_GraphEntity   ER_GraphEntity;
+typedef struct ER_GraphRelation ER_GraphRelation;
 
-#define ER_RESULT_STATUS(result) ((result).res_status)
-#define ER_RESULT_OK(result)     (ER_STATUS_OK == ER_RESULT_STATUS(result))
-#define ER_RESULT_GET(result)    ((result).res_val)
-#define ER_RESULT_ERROR(result)  ((result).res_err)
+struct ER_GraphEntity {
+    ER_ASTEntityNode *gen_astnode;
+    ER_GraphEntity   *gen_specifies;
+    UT_hash_handle    gen_hh;
+};
 
-typedef enum ER_Status {
-    ER_STATUS_OK = 0,
-    ER_STATUS_ERR
-} ER_Status;
+typedef struct ER_GraphEdge {
+    TAILQ_ENTRY(ER_GraphEdge) ged_link;
+    ER_ASTReferenceNode *ged_astnode;
+    ER_GraphEntity      *ged_entity;
+    ER_GraphRelation    *ged_relation;
+} ER_GraphEdge;
 
-void *er_result_unwrap_impl(void *val, ER_Status status, const char *message);
+struct ER_GraphRelation {
+    TAILQ_HEAD(, ER_GraphEdge) gre_edges;
+    ER_ASTRelationNode *gre_astnode;
+    UT_hash_handle      gre_hh;
+};
+
+typedef struct ER_Graph {
+    ER_GraphEntity   *gr_entities;
+    ER_GraphRelation *gr_relations;
+    ER_GraphRelation *gr_root;
+} ER_Graph;
+
+typedef ER_RESULT(ER_Graph) ER_GraphResult;
+
+ER_GraphResult er_graph_compute(ER_ASTRootNode *ast_root);
