@@ -162,7 +162,7 @@ static LexerInstruction lexer_base_handler(char c) {
             sc_token_type = ER_TOKEN_TYPE_SEMICOLON;
             break;
         case '(':
-            sc_token_type = ER_TOKEN_TYPE_LPARENT;
+            sc_token_type = ER_TOKEN_TYPE_LPAREN;
             break;
         case ')':
             sc_token_type = ER_TOKEN_TYPE_RPAREN;

@@ -201,7 +201,7 @@ ParserNodeResult parser_do_reference(ParserState *parser) {
     reference->ref_entname         = ref_name;
 
     // (
-    ParserExpectResult lpar_res = parser_expect(parser, ER_TOKEN_TYPE_LPARENT);
+    ParserExpectResult lpar_res = parser_expect(parser, ER_TOKEN_TYPE_LPAREN);
     if (!ER_RESULT_OK(lpar_res)) {
         return parser_node_err_expect(lpar_res);
     }
@@ -233,7 +233,7 @@ ParserNodeResult parser_do_reference(ParserState *parser) {
     }
 
     reference->ref_lcard = ER_RESULT_GET(lcard_res);
-    reference->ref_lcard = ER_RESULT_GET(rcard_res);
+    reference->ref_rcard = ER_RESULT_GET(rcard_res);
     return parser_node_ok((ER_ASTNode *)reference);
 }
 

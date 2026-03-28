@@ -43,7 +43,7 @@ typedef enum ER_TokenType {
     ER_TOKEN_TYPE_SPECIFIES  = 1 << 7,
     ER_TOKEN_TYPE_SEMICOLON  = 1 << 8,
     ER_TOKEN_TYPE_KEY        = 1 << 9,
-    ER_TOKEN_TYPE_LPARENT    = 1 << 10,
+    ER_TOKEN_TYPE_LPAREN     = 1 << 10,
     ER_TOKEN_TYPE_RPAREN     = 1 << 11,
     ER_TOKEN_TYPE_LBLOCK     = 1 << 12,
     ER_TOKEN_TYPE_RBLOCK     = 1 << 13,
