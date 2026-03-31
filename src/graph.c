@@ -28,12 +28,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <ergen/graph.h>
 #include <ergen/svg.h>
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 typedef ER_RESULT(ER_GraphEntity *) GraphEntityResult;
 typedef ER_RESULT(ER_GraphRelation *) GraphRelationResult;
 
+// NOTE: this must be here because we want to use the default HASH_FUNCTION
+// definition
 static inline void graph_hash_string(ER_String *s, unsigned int *hashv) {
     unsigned int r;
     HASH_FUNCTION(s->str_buf, s->str_len, r);
@@ -43,145 +45,244 @@ static inline void graph_hash_string(ER_String *s, unsigned int *hashv) {
 #undef HASH_FUNCTION
 #define HASH_FUNCTION(keyptr, keylen, hashv) graph_hash_string(keyptr, &hashv)
 
+// NOTE: we negate the value of ER_STRING_EQ because uthash sues the POSIX
+// convention (i.e., 0 = success, all other values are errors)
 #undef HASH_KEYCMP
 #define HASH_KEYCMP(a, b, n) !ER_STRING_EQ(*(ER_String *)a, *(ER_String *)b)
 
 static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_String name) {
     ER_GraphEntity *ent = NULL;
     HASH_FIND(gen_hh, graph->gr_entities, &name, sizeof(name), ent);
-    if (NULL != ent) return (GraphEntityResult){.res_status = ER_STATUS_OK, .res_val = ent};
-    return (GraphEntityResult){.res_status = ER_STATUS_ERR, .res_err = "unknown entity"};
+
+    if (NULL != ent) {
+        return (GraphEntityResult){.res_status = ER_STATUS_OK, .res_val = ent};
+    }
+
+    return (GraphEntityResult){.res_status = ER_STATUS_ERR,
+                               .res_err    = "unknown entity"};
 }
 
 static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_String name) {
     ER_GraphRelation *rel = NULL;
     HASH_FIND(gre_hh, graph->gr_relations, &name, sizeof(name), rel);
-    if (NULL != rel) return (GraphRelationResult){.res_status = ER_STATUS_OK, .res_val = rel};
-    return (GraphRelationResult){.res_status = ER_STATUS_ERR, .res_err = "unknown relation"};
+
+    if (NULL != rel) {
+        return (GraphRelationResult){.res_status = ER_STATUS_OK,
+                                     .res_val    = rel};
+    }
+
+    return (GraphRelationResult){.res_status = ER_STATUS_ERR,
+                                 .res_err    = "unknown relation"};
 }
 
-static GraphEntityResult graph_add_entity(ER_Graph *graph, ER_ASTEntityNode *entity) {
+static GraphEntityResult graph_add_entity(ER_Graph         *graph,
+                                          ER_ASTEntityNode *entity) {
     GraphEntityResult get_res = graph_get_entity(graph, entity->ent_name);
-    if (ER_RESULT_OK(get_res)) return (GraphEntityResult){.res_status = ER_STATUS_ERR, .res_err = "entity redefined"};
+    if (ER_RESULT_OK(get_res)) {
+        return (GraphEntityResult){.res_status = ER_STATUS_ERR,
+                                   .res_err    = "entity redefined"};
+    }
+
     ER_GraphEntity *graph_entity = calloc(1, sizeof(*graph_entity));
     assert(NULL != graph_entity);
     graph_entity->gen_astnode = entity;
-    HASH_ADD(gen_hh, graph->gr_entities, gen_astnode->ent_name, sizeof(ER_String), graph_entity);
-    return (GraphEntityResult){.res_status = ER_STATUS_OK, .res_val = graph_entity};
+
+    HASH_ADD(gen_hh,
+             graph->gr_entities,
+             gen_astnode->ent_name,
+             sizeof(ER_String),
+             graph_entity);
+    return (GraphEntityResult){.res_status = ER_STATUS_OK,
+                               .res_val    = graph_entity};
 }
 
-static GraphRelationResult graph_add_relation(ER_Graph *graph, ER_ASTRelationNode *relation) {
+static GraphRelationResult graph_add_relation(ER_Graph           *graph,
+                                              ER_ASTRelationNode *relation) {
     GraphRelationResult get_res = graph_get_relation(graph, relation->rel_name);
-    if (ER_RESULT_OK(get_res)) return (GraphRelationResult){.res_status = ER_STATUS_ERR, .res_err = "relation redefined"};
+    if (ER_RESULT_OK(get_res)) {
+        return (GraphRelationResult){.res_status = ER_STATUS_ERR,
+                                     .res_err    = "relation redefined"};
+    }
+
     ER_GraphRelation *graph_relation = calloc(1, sizeof(*graph_relation));
     assert(NULL != graph_relation);
     graph_relation->gre_astnode = relation;
     TAILQ_INIT(&graph_relation->gre_edges);
-    HASH_ADD(gre_hh, graph->gr_relations, gre_astnode->rel_name, sizeof(ER_String), graph_relation);
-    return (GraphRelationResult){.res_status = ER_STATUS_OK, .res_val = graph_relation};
+
+    HASH_ADD(gre_hh,
+             graph->gr_relations,
+             gre_astnode->rel_name,
+             sizeof(ER_String),
+             graph_relation);
+    return (GraphRelationResult){.res_status = ER_STATUS_OK,
+                                 .res_val    = graph_relation};
 }
 
-static inline ER_GraphResult graph_err(const char *msg) { return (ER_GraphResult){.res_status = ER_STATUS_ERR, .res_err = msg}; }
-static inline ER_GraphResult graph_ok(ER_Graph graph) { return (ER_GraphResult){.res_status = ER_STATUS_OK, .res_val = graph}; }
+static inline ER_GraphResult graph_err(const char *msg) {
+    return (ER_GraphResult){.res_status = ER_STATUS_ERR, .res_err = msg};
+}
+
+static inline ER_GraphResult graph_ok(ER_Graph graph) {
+    return (ER_GraphResult){.res_status = ER_STATUS_OK, .res_val = graph};
+}
 
 ER_GraphResult er_graph_compute(ER_ASTRootNode *ast_root) {
+    // NOTE: zeroeing this structure causes pointer fields to become NULL, which
+    // constitutes implicit initialization as per uthash documentation
     ER_Graph graph = {0};
+
+    // add entities to the entity hashmap
     ER_ASTNode *ast_ent;
     TAILQ_FOREACH(ast_ent, &ast_root->rt_entities, an_link) {
-        GraphEntityResult add_res = graph_add_entity(&graph, (void *)ast_ent);
-        if (!ER_RESULT_OK(add_res)) return graph_err(ER_RESULT_ERROR(add_res));
+        assert(ER_AST_NODE_TYPE_ENTITY == ast_ent->an_type);
+        ER_ASTEntityNode *ent = (void *)ast_ent;
+
+        GraphEntityResult add_res = graph_add_entity(&graph, ent);
+        if (!ER_RESULT_OK(add_res)) {
+            return graph_err(ER_RESULT_ERROR(add_res));
+        }
     }
+
+    // add relations to the relation hashmap
     ER_ASTNode *ast_rel;
     TAILQ_FOREACH(ast_rel, &ast_root->rt_relations, an_link) {
-        GraphRelationResult add_res = graph_add_relation(&graph, (void *)ast_rel);
-        if (!ER_RESULT_OK(add_res)) return graph_err(ER_RESULT_ERROR(add_res));
+        assert(ER_AST_NODE_TYPE_RELATION == ast_rel->an_type);
+        ER_ASTRelationNode *rel = (void *)ast_rel;
+
+        GraphRelationResult add_res = graph_add_relation(&graph, rel);
+        if (!ER_RESULT_OK(add_res)) {
+            return graph_err(ER_RESULT_ERROR(add_res));
+        }
     }
+
+    // link entities to their parent
     ER_GraphEntity *graph_ent, *graph_ent_tmp;
     HASH_ITER(gen_hh, graph.gr_entities, graph_ent, graph_ent_tmp) {
-        if (!(graph_ent->gen_astnode->ent_flags & ER_ENTITY_FLAGS_SPECIFIES)) continue;
-        GraphEntityResult get_res = graph_get_entity(&graph, graph_ent->gen_astnode->ent_specifies);
-        if (!ER_RESULT_OK(get_res)) return graph_err(ER_RESULT_ERROR(get_res));
-        graph_ent->gen_specifies = ER_RESULT_GET(get_res);
+        if (!(graph_ent->gen_astnode->ent_flags & ER_ENTITY_FLAGS_SPECIFIES)) {
+            continue;
+        }
+
+        GraphEntityResult get_res = graph_get_entity(
+            &graph,
+            graph_ent->gen_astnode->ent_specifies);
+        if (!ER_RESULT_OK(get_res)) {
+            return graph_err(ER_RESULT_ERROR(get_res));
+        }
+
+        ER_GraphEntity *specifies = ER_RESULT_GET(get_res);
+        graph_ent->gen_specifies  = specifies;
     }
+
+    // link relations with entities
     ER_GraphRelation *graph_rel, *graph_rel_tmp;
     HASH_ITER(gre_hh, graph.gr_relations, graph_rel, graph_rel_tmp) {
         ER_ASTNode *ref_astnode;
-        TAILQ_FOREACH(ref_astnode, &graph_rel->gre_astnode->rel_entities, an_link) {
-            ER_ASTReferenceNode *ref = (void *)ref_astnode;
-            ER_GraphEdge *edge = calloc(1, sizeof(*edge));
+        TAILQ_FOREACH(ref_astnode,
+                      &graph_rel->gre_astnode->rel_entities,
+                      an_link) {
+            assert(ER_AST_NODE_TYPE_REFERENCE == ref_astnode->an_type);
+            ER_ASTReferenceNode *ref  = (void *)ref_astnode;
+            ER_GraphEdge        *edge = calloc(1, sizeof(*edge));
             assert(NULL != edge);
-            GraphEntityResult get_res = graph_get_entity(&graph, ref->ref_entname);
-            if (!ER_RESULT_OK(get_res)) return graph_err(ER_RESULT_ERROR(get_res));
-            edge->ged_astnode = ref;
-            edge->ged_entity = ER_RESULT_GET(get_res);
-            edge->ged_relation = graph_rel;
+
+            GraphEntityResult get_res = graph_get_entity(&graph,
+                                                         ref->ref_entname);
+            if (!ER_RESULT_OK(get_res)) {
+                return graph_err(ER_RESULT_ERROR(get_res));
+            }
+
+            ER_GraphEntity *ref_entity = ER_RESULT_GET(get_res);
+            edge->ged_astnode          = ref;
+            edge->ged_entity           = ref_entity;
+            edge->ged_relation         = graph_rel;
             TAILQ_INSERT_TAIL(&graph_rel->gre_edges, edge, ged_link);
         }
     }
+
     return graph_ok(graph);
 }
 
-static ER_i32 calculate_entity_layer(ER_GraphEntity *ent) {
-    if (ent->gen_specifies == NULL) return 0;
-    return 1 + calculate_entity_layer(ent->gen_specifies);
+static ER_i32 graph_calculate_entity_layer(ER_GraphEntity *ent) {
+    if (NULL == ent->gen_specifies) {
+        return 0;
+    }
+
+    return 1 + graph_calculate_entity_layer(ent->gen_specifies);
 }
 
 // Get the height of the entire specialization subtree starting at ent
-static ER_i32 get_tree_height(ER_Graph *graph, ER_GraphEntity *ent) {
+static ER_i32 graph_get_tree_height(ER_Graph *graph, ER_GraphEntity *ent) {
     ER_i32 max_child_h = 0;
+
+    // TODO: optimize this and by adding a tailq of specifiers to each entity
     ER_GraphEntity *curr, *tmp;
     HASH_ITER(gen_hh, graph->gr_entities, curr, tmp) {
         if (curr->gen_specifies == ent) {
-            ER_i32 ch = get_tree_height(graph, curr);
-            if (ch > max_child_h) max_child_h = ch;
+            ER_i32 ch = graph_get_tree_height(graph, curr);
+            if (ch > max_child_h) {
+                max_child_h = ch;
+            }
         }
     }
+
     return ent->gen_h + (max_child_h > 0 ? 100 + max_child_h : 0);
 }
 
 void er_graph_place(ER_Graph *graph) {
-    ER_GraphEntity *ent, *tmp_ent;
     ER_GraphRelation *rel, *tmp_rel;
 
     // Phase 1: Sizes and Layers
+    ER_GraphEntity *ent, *tmp_ent;
     HASH_ITER(gen_hh, graph->gr_entities, ent, tmp_ent) {
-        ent->gen_layer = calculate_entity_layer(ent);
-        ent->gen_w = (ent->gen_astnode->ent_name.str_len * 12) + ER_SVG_ENTITY_W_PAD;
+        ent->gen_layer = graph_calculate_entity_layer(ent);
+        ent->gen_w     = (ent->gen_astnode->ent_name.str_len * 12) +
+                     ER_SVG_ENTITY_W_PAD;
         ent->gen_h = ER_SVG_ENTITY_H_MIN;
+
         ER_ASTNode *attr;
         TAILQ_FOREACH(attr, &ent->gen_astnode->ent_attributes, an_link) {
             ER_ASTAttributeNode *atrn = (void *)attr;
             ER_i32 attr_w = (atrn->atr_name.str_len * 10) + ER_SVG_ENTITY_W_PAD;
-            if (attr_w > ent->gen_w) ent->gen_w = attr_w;
             ent->gen_h += ER_SVG_ATTR_H_STEP;
+            if (attr_w > ent->gen_w) {
+                ent->gen_w = attr_w;
+            }
         }
     }
 
     // Phase 2: Root-Tree Placement
     ER_i32 col_x[2] = {100, 1200}, col_y[2] = {100, 100};
-    int root_idx = 0;
+    int    root_idx = 0;
     HASH_ITER(gen_hh, graph->gr_entities, ent, tmp_ent) {
-        if (ent->gen_layer != 0) continue;
-        int c = root_idx % 2;
+        if (0 != ent->gen_layer) {
+            continue;
+        }
+
+        int c        = root_idx % 2;
         ent->gen_col = c;
-        ent->gen_x = col_x[c];
-        ent->gen_y = col_y[c];
-        col_y[c] += get_tree_height(graph, ent) + 150;
+        ent->gen_x   = col_x[c];
+        ent->gen_y   = col_y[c];
+        col_y[c] += graph_get_tree_height(graph, ent) + 150;
         root_idx++;
     }
 
     // Recursive Child Placement
-    for (int l = 1; l < 5; l++) {
+    for (ER_u8 l = 1; l < 5; l++) {
         HASH_ITER(gen_hh, graph->gr_entities, ent, tmp_ent) {
-            if (ent->gen_layer != l) continue;
+            if (ent->gen_layer != l) {
+                continue;
+            }
+
             ER_GraphEntity *p = ent->gen_specifies;
-            ent->gen_col = p->gen_col;
-            ent->gen_x = p->gen_x;
-            ent->gen_y = p->gen_y + p->gen_h + 100;
+            ent->gen_col      = p->gen_col;
+            ent->gen_x        = p->gen_x;
+            ent->gen_y        = p->gen_y + p->gen_h + 100;
+
             // Shift siblings
             ER_GraphEntity *s, *ts;
             HASH_ITER(gen_hh, graph->gr_entities, s, ts) {
-                if (s != ent && s->gen_specifies == p && s->gen_x >= ent->gen_x && s->gen_y == ent->gen_y) {
+                if (s != ent && s->gen_specifies == p &&
+                    s->gen_x >= ent->gen_x && s->gen_y == ent->gen_y) {
                     ent->gen_x = s->gen_x + s->gen_w + 50;
                 }
             }
@@ -191,45 +292,89 @@ void er_graph_place(ER_Graph *graph) {
     // Phase 3: Relations (Center Column)
     ER_i32 rel_x = 650, rel_y_curr = 100;
     HASH_ITER(gre_hh, graph->gr_relations, rel, tmp_rel) {
-        rel->gre_w = (rel->gre_astnode->rel_name.str_len * 12) + ER_SVG_RELATION_W_PAD;
+        rel->gre_w = (rel->gre_astnode->rel_name.str_len * 12) +
+                     ER_SVG_RELATION_W_PAD;
         rel->gre_h = ER_SVG_RELATION_H_MIN;
+
         ER_ASTNode *attr;
         TAILQ_FOREACH(attr, &rel->gre_astnode->rel_attributes, an_link) {
-            ER_ASTAttributeNode *atrn = (void *)attr;
-            ER_i32 attr_w = (atrn->atr_name.str_len * 10) + ER_SVG_RELATION_W_PAD;
-            if (attr_w > rel->gre_w) rel->gre_w = attr_w;
+            ER_ASTAttributeNode *atrn   = (void *)attr;
+            ER_i32               attr_w = (atrn->atr_name.str_len * 10) +
+                            ER_SVG_RELATION_W_PAD;
             rel->gre_h += ER_SVG_ATTR_H_STEP;
+            if (attr_w > rel->gre_w) {
+                rel->gre_w = attr_w;
+            }
         }
 
-        ER_i32 ay = 0, ec = 0;
+        ER_i32        ay = 0, ec = 0;
         ER_GraphEdge *edge;
-        TAILQ_FOREACH(edge, &rel->gre_edges, ged_link) { ay += edge->ged_entity->gen_y + edge->ged_entity->gen_h / 2; ec++; }
-        if (ec > 0) ay /= ec; else ay = rel_y_curr;
-        rel->gre_x = rel_x; rel->gre_y = ay - rel->gre_h / 2;
-        if (rel->gre_y < rel_y_curr) rel->gre_y = rel_y_curr;
+        TAILQ_FOREACH(edge, &rel->gre_edges, ged_link) {
+            ay += edge->ged_entity->gen_y + edge->ged_entity->gen_h / 2;
+            ec++;
+        }
+
+        ay         = (ec > 0) ? ay / ec : rel_y_curr;
+        rel->gre_x = rel_x;
+        rel->gre_y = ay - rel->gre_h / 2;
+        if (rel->gre_y < rel_y_curr) {
+            rel->gre_y = rel_y_curr;
+        }
         rel_y_curr = rel->gre_y + rel->gre_h + 150;
 
         // Phase 4: Better Vertex Allocation and Surface Distribution
-        int v_used[4] = {0, 0, 0, 0}; // L, R, T, B
-        int e_idx = 0;
+        ER_i32 v_used[4] = {0, 0, 0, 0}; // L, R, T, B
+        ER_i32 e_idx     = 0;
         TAILQ_FOREACH(edge, &rel->gre_edges, ged_link) {
             ER_GraphEntity *e = edge->ged_entity;
-            int v = -1;
-            // Strategy: 1. Try side closest to entity. 2. Try side with least usage.
-            if (e->gen_x + e->gen_w <= rel->gre_x && v_used[0] == 0) v = 0;
-            else if (e->gen_x >= rel->gre_x + rel->gre_w && v_used[1] == 0) v = 1;
-            else if (e->gen_y + e->gen_h <= rel->gre_y && v_used[2] == 0) v = 2;
-            else if (e->gen_y >= rel->gre_y + rel->gre_h && v_used[3] == 0) v = 3;
-            else { // Find least used
-                int min_u = 999;
-                for (int i=0; i<4; i++) if (v_used[i] < min_u) { min_u = v_used[i]; v = i; }
+            ER_i32          v = -1;
+
+            // Strategy: 1. Try side closest to entity. 2. Try side with least
+            // usage.
+            if (e->gen_x + e->gen_w <= rel->gre_x && v_used[0] == 0) {
+                v = 0;
+            } else if (e->gen_x >= rel->gre_x + rel->gre_w && v_used[1] == 0) {
+                v = 1;
+            } else if (e->gen_y + e->gen_h <= rel->gre_y && v_used[2] == 0) {
+                v = 2;
+            } else if (e->gen_y >= rel->gre_y + rel->gre_h && v_used[3] == 0) {
+                v = 3;
+            } else { // Find least used
+                ER_i32 min_u = v_used[0];
+                v            = 0;
+                for (ER_u8 i = 1; i < 4; i++) {
+                    if (v_used[i] < min_u) {
+                        min_u = v_used[i];
+                        v     = i;
+                    }
+                }
             }
             v_used[v]++;
 
-            if (v == 0) { edge->ged_x1 = rel->gre_x; edge->ged_y1 = rel->gre_y + rel->gre_h / 2; }
-            else if (v == 1) { edge->ged_x1 = rel->gre_x + rel->gre_w; edge->ged_y1 = rel->gre_y + rel->gre_h / 2; }
-            else if (v == 2) { edge->ged_x1 = rel->gre_x + rel->gre_w / 2; edge->ged_y1 = rel->gre_y; }
-            else { edge->ged_x1 = rel->gre_x + rel->gre_w / 2; edge->ged_y1 = rel->gre_y + rel->gre_h; }
+            switch (v) {
+                case 0:
+                    edge->ged_x1 = rel->gre_x;
+                    edge->ged_y1 = rel->gre_y + rel->gre_h / 2;
+                    break;
+
+                case 1:
+                    edge->ged_x1 = rel->gre_x + rel->gre_w;
+                    edge->ged_y1 = rel->gre_y + rel->gre_h / 2;
+                    break;
+
+                case 2:
+                    edge->ged_x1 = rel->gre_x + rel->gre_w / 2;
+                    edge->ged_y1 = rel->gre_y;
+                    break;
+
+                case 3:
+                    edge->ged_x1 = rel->gre_x + rel->gre_w / 2;
+                    edge->ged_y1 = rel->gre_y + rel->gre_h;
+                    break;
+
+                default:
+                    assert(!"invalid vertex");
+            }
 
             // Distribute on Entity Surface
             if (e->gen_x + e->gen_w <= edge->ged_x1) { // Entity is left
