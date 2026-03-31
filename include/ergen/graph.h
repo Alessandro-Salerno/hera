@@ -40,6 +40,10 @@ typedef struct ER_GraphRelation ER_GraphRelation;
 struct ER_GraphEntity {
     ER_ASTEntityNode *gen_astnode;
     ER_GraphEntity   *gen_specifies;
+    ER_i32            gen_x;
+    ER_i32            gen_y;
+    ER_i32            gen_w;
+    ER_i32            gen_h;
     UT_hash_handle    gen_hh;
 };
 
@@ -48,11 +52,19 @@ typedef struct ER_GraphEdge {
     ER_ASTReferenceNode *ged_astnode;
     ER_GraphEntity      *ged_entity;
     ER_GraphRelation    *ged_relation;
+    ER_i32               ged_x1;
+    ER_i32               ged_y1;
+    ER_i32               ged_x2;
+    ER_i32               ged_y2;
 } ER_GraphEdge;
 
 struct ER_GraphRelation {
     TAILQ_HEAD(, ER_GraphEdge) gre_edges;
     ER_ASTRelationNode *gre_astnode;
+    ER_i32              gre_x;
+    ER_i32              gre_y;
+    ER_i32              gre_w;
+    ER_i32              gre_h;
     UT_hash_handle      gre_hh;
 };
 
@@ -65,3 +77,4 @@ typedef struct ER_Graph {
 typedef ER_RESULT(ER_Graph) ER_GraphResult;
 
 ER_GraphResult er_graph_compute(ER_ASTRootNode *ast_root);
+void           er_graph_place(ER_Graph *graph);

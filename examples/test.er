@@ -1,20 +1,85 @@
-total entity thingy {
-    attribute x;
-    attribute y key;
-    attribute z;
+entity Studente {
+    attribute s_id key;
+    attribute s_cf;
+    attribute s_cognome;
+    attribute s_genere;
+    attribute s_luogonascita;
+    attribute s_indirizzo;
+    attribute s_telefono;
 }
 
-entity "thingy with spaces" {
-
+entity DatoreDiLavoro {
+    attribute dl_id key;
+    attribute dl_nome;
 }
 
-entity other specifies "thingy with spaces" {
-    attribute w;
+entity Azienda specifies DatoreDiLavoro {
+    attribute a_id key;
 }
 
-relation rel {
-    entity thingy (1, N);
-    entity other (0, 1);
+entity Autonomo specifies DatoreDiLavoro {
+    attribute at_id key;
+    attribute at_areainteresse;
+    attribute at_titolo;
+}
 
-    attribute bruh;
+relation Lavoro {
+    entity Studente (0, N);
+    entity DatoreDiLavoro (0, N);
+
+    attribute l_datainizio;
+    attribute l_datafine;
+
+    attribute l_livello;
+    attribute l_posizione;
+}
+
+entity Corso {
+    attribute c_id key;
+    attribute c_titolo;
+    attribute c_datainizio;
+    attribute c_datafine;
+    attribute c_numeropartecipanti;
+}
+
+entity Lezione {
+    attribute lz_id key;
+    attribute lz_data;
+    attribute lz_ora;
+    attribute lz_durata;
+}
+
+relation Appartiene {
+    entity Lezione (1, 1);
+    entity Corso (0, N);
+}
+
+relation Frequenta {
+    entity Studente (0, N);
+    entity Corso (0, N);
+
+    attribute f_voto;
+}
+
+entity Insegnante {
+    attribute i_id key;
+    attribute i_cognome;
+    attribute i_eta; 
+    attribute i_luogonascita;
+    attribute i_telefono;
+    attribute i_mail;
+    attribute i_status; // interno o collaboratore
+}
+
+relation Insegna {
+    entity Insegnante (0, N);
+    entity Corso (0, N);
+
+    attribute in_datainizio;
+    attribute in_datafine;
+}
+
+relation Abilitato {
+    entity Insegnante (0, N);
+    entity Corso (0, N);
 }

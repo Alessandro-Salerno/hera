@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ergen/graph.h>
 #include <ergen/lexer.h>
 #include <ergen/parser.h>
+#include <ergen/svg.h>
 #include <stdio.h>
 
 int main(int argc, const char *const argv[]) {
@@ -73,6 +74,9 @@ int main(int argc, const char *const argv[]) {
 
     ER_GraphResult graph_res = er_graph_compute(ast_root);
     ER_Graph      *graph     = ER_RESULT_UNWRAP(graph_res);
+
+    er_graph_place(graph);
+    er_svg_emit(graph);
 
     return EXIT_SUCCESS;
 }

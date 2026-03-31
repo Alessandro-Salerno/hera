@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2500" height="2500">
+<defs>
+  <marker id="arrowPartial" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto">
+    <path d="M0,0 L15,7.5 L0,15 Z" fill="white" stroke="black" stroke-width="1" />
+  </marker>
+  <marker id="arrowTotal" markerWidth="15" markerHeight="15" refX="15" refY="7.5" orient="auto">
+    <path d="M0,0 L15,7.5 L0,15 Z" fill="black" />
+  </marker>
+</defs>
+<polyline points="850,200 565,200 565,235 280,235" fill="none" stroke="black" stroke-width="2" />
+<text x="285" y="230" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(0, N)</text>
+<polyline points="1050,200 1325,200 1325,160 1600,160" fill="none" stroke="black" stroke-width="2" />
+<text x="1555" y="175" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(0, N)</text>
+<polyline points="1050,790 1325,790 1325,660 1600,660" fill="none" stroke="black" stroke-width="2" />
+<text x="1555" y="675" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(1, 1)</text>
+<polyline points="850,790 595,790 595,825 340,825" fill="none" stroke="black" stroke-width="2" />
+<text x="345" y="820" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(0, N)</text>
+<polyline points="850,1335 565,1335 565,235 280,235" fill="none" stroke="black" stroke-width="2" />
+<text x="285" y="250" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(0, N)</text>
+<polyline points="850,1335 595,1335 595,825 340,825" fill="none" stroke="black" stroke-width="2" />
+<text x="345" y="840" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(0, N)</text>
+<polyline points="850,1910 565,1910 565,1415 280,1415" fill="none" stroke="black" stroke-width="2" />
+<text x="285" y="1430" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(0, N)</text>
+<polyline points="850,1910 595,1910 595,825 340,825" fill="none" stroke="black" stroke-width="2" />
+<text x="345" y="840" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(0, N)</text>
+<polyline points="850,2470 565,2470 565,1415 280,1415" fill="none" stroke="black" stroke-width="2" />
+<text x="285" y="1430" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(0, N)</text>
+<polyline points="850,2470 595,2470 595,825 340,825" fill="none" stroke="black" stroke-width="2" />
+<text x="345" y="840" font-family="monospace" font-size="10" font-weight="bold" fill="darkred">(0, N)</text>
+<line x1="1704" y1="280" x2="1704" y2="220" stroke="black" stroke-width="3" marker-end="url(#arrowPartial)" />
+<line x1="1662" y1="570" x2="1662" y2="280" stroke="black" stroke-width="2" />
+<line x1="1974" y1="570" x2="1974" y2="280" stroke="black" stroke-width="2" />
+<line x1="1662" y1="280" x2="1974" y2="280" stroke="black" stroke-width="2" />
+<rect x="100" y="100" width="180" height="270" fill="white" stroke="black" stroke-width="2" />
+<text x="190" y="125" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Studente</text>
+<line x1="100" y1="135" x2="280" y2="135" stroke="black" stroke-width="1" />
+<text x="110" y="155" font-family="monospace" font-size="12" font-weight="900" fill="blue" text-decoration="underline">s_id</text>
+<text x="110" y="185" font-family="monospace" font-size="12" font-weight="normal" fill="black" >s_cf</text>
+<text x="110" y="215" font-family="monospace" font-size="12" font-weight="normal" fill="black" >s_cognome</text>
+<text x="110" y="245" font-family="monospace" font-size="12" font-weight="normal" fill="black" >s_genere</text>
+<text x="110" y="275" font-family="monospace" font-size="12" font-weight="normal" fill="black" >s_luogonascita</text>
+<text x="110" y="305" font-family="monospace" font-size="12" font-weight="normal" fill="black" >s_indirizzo</text>
+<text x="110" y="335" font-family="monospace" font-size="12" font-weight="normal" fill="black" >s_telefono</text>
+<rect x="1600" y="100" width="208" height="120" fill="white" stroke="black" stroke-width="2" />
+<text x="1704" y="125" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">DatoreDiLavoro</text>
+<line x1="1600" y1="135" x2="1808" y2="135" stroke="black" stroke-width="1" />
+<text x="1610" y="155" font-family="monospace" font-size="12" font-weight="900" fill="blue" text-decoration="underline">dl_id</text>
+<text x="1610" y="185" font-family="monospace" font-size="12" font-weight="normal" fill="black" >dl_nome</text>
+<rect x="1600" y="570" width="124" height="90" fill="white" stroke="black" stroke-width="2" />
+<text x="1662" y="595" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Azienda</text>
+<line x1="1600" y1="605" x2="1724" y2="605" stroke="black" stroke-width="1" />
+<text x="1610" y="625" font-family="monospace" font-size="12" font-weight="900" fill="blue" text-decoration="underline">a_id</text>
+<rect x="1874" y="570" width="200" height="150" fill="white" stroke="black" stroke-width="2" />
+<text x="1974" y="595" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Autonomo</text>
+<line x1="1874" y1="605" x2="2074" y2="605" stroke="black" stroke-width="1" />
+<text x="1884" y="625" font-family="monospace" font-size="12" font-weight="900" fill="blue" text-decoration="underline">at_id</text>
+<text x="1884" y="655" font-family="monospace" font-size="12" font-weight="normal" fill="black" >at_areainteresse</text>
+<text x="1884" y="685" font-family="monospace" font-size="12" font-weight="normal" fill="black" >at_titolo</text>
+<rect x="100" y="720" width="240" height="210" fill="white" stroke="black" stroke-width="2" />
+<text x="220" y="745" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Corso</text>
+<line x1="100" y1="755" x2="340" y2="755" stroke="black" stroke-width="1" />
+<text x="110" y="775" font-family="monospace" font-size="12" font-weight="900" fill="blue" text-decoration="underline">c_id</text>
+<text x="110" y="805" font-family="monospace" font-size="12" font-weight="normal" fill="black" >c_titolo</text>
+<text x="110" y="835" font-family="monospace" font-size="12" font-weight="normal" fill="black" >c_datainizio</text>
+<text x="110" y="865" font-family="monospace" font-size="12" font-weight="normal" fill="black" >c_datafine</text>
+<text x="110" y="895" font-family="monospace" font-size="12" font-weight="normal" fill="black" >c_numeropartecipanti</text>
+<rect x="1600" y="570" width="130" height="180" fill="white" stroke="black" stroke-width="2" />
+<text x="1665" y="595" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Lezione</text>
+<line x1="1600" y1="605" x2="1730" y2="605" stroke="black" stroke-width="1" />
+<text x="1610" y="625" font-family="monospace" font-size="12" font-weight="900" fill="blue" text-decoration="underline">lz_id</text>
+<text x="1610" y="655" font-family="monospace" font-size="12" font-weight="normal" fill="black" >lz_data</text>
+<text x="1610" y="685" font-family="monospace" font-size="12" font-weight="normal" fill="black" >lz_ora</text>
+<text x="1610" y="715" font-family="monospace" font-size="12" font-weight="normal" fill="black" >lz_durata</text>
+<rect x="100" y="1280" width="180" height="270" fill="white" stroke="black" stroke-width="2" />
+<text x="190" y="1305" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Insegnante</text>
+<line x1="100" y1="1315" x2="280" y2="1315" stroke="black" stroke-width="1" />
+<text x="110" y="1335" font-family="monospace" font-size="12" font-weight="900" fill="blue" text-decoration="underline">i_id</text>
+<text x="110" y="1365" font-family="monospace" font-size="12" font-weight="normal" fill="black" >i_cognome</text>
+<text x="110" y="1395" font-family="monospace" font-size="12" font-weight="normal" fill="black" >i_eta</text>
+<text x="110" y="1425" font-family="monospace" font-size="12" font-weight="normal" fill="black" >i_luogonascita</text>
+<text x="110" y="1455" font-family="monospace" font-size="12" font-weight="normal" fill="black" >i_telefono</text>
+<text x="110" y="1485" font-family="monospace" font-size="12" font-weight="normal" fill="black" >i_mail</text>
+<text x="110" y="1515" font-family="monospace" font-size="12" font-weight="normal" fill="black" >i_status</text>
+<polygon points="950,100 1050,200 950,300 850,200" fill="white" stroke="black" stroke-width="2" />
+<text x="950" y="205" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Lavoro</text>
+<text x="860" y="320" font-family="monospace" font-size="12" font-weight="normal" fill="black" >l_datainizio</text>
+<text x="860" y="350" font-family="monospace" font-size="12" font-weight="normal" fill="black" >l_datafine</text>
+<text x="860" y="380" font-family="monospace" font-size="12" font-weight="normal" fill="black" >l_livello</text>
+<text x="860" y="410" font-family="monospace" font-size="12" font-weight="normal" fill="black" >l_posizione</text>
+<polygon points="950,750 1050,790 950,830 850,790" fill="white" stroke="black" stroke-width="2" />
+<text x="950" y="795" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Appartiene</text>
+<polygon points="944,1280 1038,1335 944,1390 850,1335" fill="white" stroke="black" stroke-width="2" />
+<text x="944" y="1340" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Frequenta</text>
+<text x="860" y="1410" font-family="monospace" font-size="12" font-weight="normal" fill="black" >f_voto</text>
+<polygon points="955,1840 1060,1910 955,1980 850,1910" fill="white" stroke="black" stroke-width="2" />
+<text x="955" y="1915" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Insegna</text>
+<text x="860" y="2000" font-family="monospace" font-size="12" font-weight="normal" fill="black" >in_datainizio</text>
+<text x="860" y="2030" font-family="monospace" font-size="12" font-weight="normal" fill="black" >in_datafine</text>
+<polygon points="944,2430 1038,2470 944,2510 850,2470" fill="white" stroke="black" stroke-width="2" />
+<text x="944" y="2475" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">Abilitato</text>
+</svg>
