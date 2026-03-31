@@ -121,28 +121,31 @@ ER_GraphResult er_graph_compute(ER_ASTRootNode *ast_root) {
     return graph_ok(graph);
 }
 
-static bool is_parent_entity(ER_Graph *graph, ER_GraphEntity *ent) {
+static ER_i32 calculate_entity_layer(ER_GraphEntity *ent) {
+    if (ent->gen_specifies == NULL) return 0;
+    return 1 + calculate_entity_layer(ent->gen_specifies);
+}
+
+// Get the height of the entire specialization subtree starting at ent
+static ER_i32 get_tree_height(ER_Graph *graph, ER_GraphEntity *ent) {
+    ER_i32 max_child_h = 0;
     ER_GraphEntity *curr, *tmp;
     HASH_ITER(gen_hh, graph->gr_entities, curr, tmp) {
-        if (curr->gen_specifies == ent) return true;
+        if (curr->gen_specifies == ent) {
+            ER_i32 ch = get_tree_height(graph, curr);
+            if (ch > max_child_h) max_child_h = ch;
+        }
     }
-    return false;
+    return ent->gen_h + (max_child_h > 0 ? 100 + max_child_h : 0);
 }
 
 void er_graph_place(ER_Graph *graph) {
     ER_GraphEntity *ent, *tmp_ent;
     ER_GraphRelation *rel, *tmp_rel;
 
-    ER_i32 left_y = 100;
-    ER_i32 right_y = 100;
-    ER_i32 left_x = 100;
-    ER_i32 right_x = 1600;
-    ER_i32 rel_x = 850;
-    ER_i32 rel_y = 100;
-
-    // 1. Placement: Staggered Entities
-    int idx = 0;
+    // Phase 1: Sizes and Layers
     HASH_ITER(gen_hh, graph->gr_entities, ent, tmp_ent) {
+        ent->gen_layer = calculate_entity_layer(ent);
         ent->gen_w = (ent->gen_astnode->ent_name.str_len * 12) + ER_SVG_ENTITY_W_PAD;
         ent->gen_h = ER_SVG_ENTITY_H_MIN;
         ER_ASTNode *attr;
@@ -152,31 +155,41 @@ void er_graph_place(ER_Graph *graph) {
             if (attr_w > ent->gen_w) ent->gen_w = attr_w;
             ent->gen_h += ER_SVG_ATTR_H_STEP;
         }
+    }
 
-        if (ent->gen_specifies != NULL) {
-            ent->gen_x = ent->gen_specifies->gen_x;
-            ent->gen_y = ent->gen_specifies->gen_y + ent->gen_specifies->gen_h + 350;
-            ER_GraphEntity *sib, *tmp_sib;
-            HASH_ITER(gen_hh, graph->gr_entities, sib, tmp_sib) {
-                if (sib != ent && sib->gen_specifies == ent->gen_specifies && sib->gen_x != 0) {
-                    ent->gen_x += sib->gen_w + 150;
+    // Phase 2: Root-Tree Placement
+    ER_i32 col_x[2] = {100, 1200}, col_y[2] = {100, 100};
+    int root_idx = 0;
+    HASH_ITER(gen_hh, graph->gr_entities, ent, tmp_ent) {
+        if (ent->gen_layer != 0) continue;
+        int c = root_idx % 2;
+        ent->gen_col = c;
+        ent->gen_x = col_x[c];
+        ent->gen_y = col_y[c];
+        col_y[c] += get_tree_height(graph, ent) + 150;
+        root_idx++;
+    }
+
+    // Recursive Child Placement
+    for (int l = 1; l < 5; l++) {
+        HASH_ITER(gen_hh, graph->gr_entities, ent, tmp_ent) {
+            if (ent->gen_layer != l) continue;
+            ER_GraphEntity *p = ent->gen_specifies;
+            ent->gen_col = p->gen_col;
+            ent->gen_x = p->gen_x;
+            ent->gen_y = p->gen_y + p->gen_h + 100;
+            // Shift siblings
+            ER_GraphEntity *s, *ts;
+            HASH_ITER(gen_hh, graph->gr_entities, s, ts) {
+                if (s != ent && s->gen_specifies == p && s->gen_x >= ent->gen_x && s->gen_y == ent->gen_y) {
+                    ent->gen_x = s->gen_x + s->gen_w + 50;
                 }
             }
-        } else {
-            if (idx % 2 == 0) {
-                ent->gen_x = left_x;
-                ent->gen_y = left_y;
-                left_y += ent->gen_h + 350;
-            } else {
-                ent->gen_x = right_x;
-                ent->gen_y = right_y;
-                right_y += ent->gen_h + 350;
-            }
-            idx++;
         }
     }
 
-    // 2. Relations: Middle column
+    // Phase 3: Relations (Center Column)
+    ER_i32 rel_x = 650, rel_y_curr = 100;
     HASH_ITER(gre_hh, graph->gr_relations, rel, tmp_rel) {
         rel->gre_w = (rel->gre_astnode->rel_name.str_len * 12) + ER_SVG_RELATION_W_PAD;
         rel->gre_h = ER_SVG_RELATION_H_MIN;
@@ -188,44 +201,51 @@ void er_graph_place(ER_Graph *graph) {
             rel->gre_h += ER_SVG_ATTR_H_STEP;
         }
 
-        rel->gre_x = rel_x;
-        rel->gre_y = rel_y;
-        rel_y += rel->gre_h + 450;
-
-        // 3. Routing: Use different vertices for different sides
+        ER_i32 ay = 0, ec = 0;
         ER_GraphEdge *edge;
+        TAILQ_FOREACH(edge, &rel->gre_edges, ged_link) { ay += edge->ged_entity->gen_y + edge->ged_entity->gen_h / 2; ec++; }
+        if (ec > 0) ay /= ec; else ay = rel_y_curr;
+        rel->gre_x = rel_x; rel->gre_y = ay - rel->gre_h / 2;
+        if (rel->gre_y < rel_y_curr) rel->gre_y = rel_y_curr;
+        rel_y_curr = rel->gre_y + rel->gre_h + 150;
+
+        // Phase 4: Better Vertex Allocation and Surface Distribution
+        int v_used[4] = {0, 0, 0, 0}; // L, R, T, B
+        int e_idx = 0;
         TAILQ_FOREACH(edge, &rel->gre_edges, ged_link) {
             ER_GraphEntity *e = edge->ged_entity;
-            
-            if (e->gen_x + e->gen_w <= rel->gre_x) {
-                // Entity on the left -> Left vertex
-                edge->ged_x1 = rel->gre_x; 
-                edge->ged_y1 = rel->gre_y + rel->gre_h / 2;
+            int v = -1;
+            // Strategy: 1. Try side closest to entity. 2. Try side with least usage.
+            if (e->gen_x + e->gen_w <= rel->gre_x && v_used[0] == 0) v = 0;
+            else if (e->gen_x >= rel->gre_x + rel->gre_w && v_used[1] == 0) v = 1;
+            else if (e->gen_y + e->gen_h <= rel->gre_y && v_used[2] == 0) v = 2;
+            else if (e->gen_y >= rel->gre_y + rel->gre_h && v_used[3] == 0) v = 3;
+            else { // Find least used
+                int min_u = 999;
+                for (int i=0; i<4; i++) if (v_used[i] < min_u) { min_u = v_used[i]; v = i; }
+            }
+            v_used[v]++;
+
+            if (v == 0) { edge->ged_x1 = rel->gre_x; edge->ged_y1 = rel->gre_y + rel->gre_h / 2; }
+            else if (v == 1) { edge->ged_x1 = rel->gre_x + rel->gre_w; edge->ged_y1 = rel->gre_y + rel->gre_h / 2; }
+            else if (v == 2) { edge->ged_x1 = rel->gre_x + rel->gre_w / 2; edge->ged_y1 = rel->gre_y; }
+            else { edge->ged_x1 = rel->gre_x + rel->gre_w / 2; edge->ged_y1 = rel->gre_y + rel->gre_h; }
+
+            // Distribute on Entity Surface
+            if (e->gen_x + e->gen_w <= edge->ged_x1) { // Entity is left
                 edge->ged_x2 = e->gen_x + e->gen_w;
-                edge->ged_y2 = e->gen_y + e->gen_h / 2;
-            } else if (e->gen_x >= rel->gre_x + rel->gre_w) {
-                // Entity on the right -> Right vertex
-                edge->ged_x1 = rel->gre_x + rel->gre_w;
-                edge->ged_y1 = rel->gre_y + rel->gre_h / 2;
+                edge->ged_y2 = e->gen_y + 20 + (e_idx * 30) % (e->gen_h - 40);
+            } else if (e->gen_x >= edge->ged_x1) { // Entity is right
                 edge->ged_x2 = e->gen_x;
-                edge->ged_y2 = e->gen_y + e->gen_h / 2;
-            } else if (e->gen_y + e->gen_h <= rel->gre_y) {
-                // Entity above -> Top vertex
-                edge->ged_x1 = rel->gre_x + rel->gre_w / 2;
-                edge->ged_y1 = rel->gre_y;
-                edge->ged_x2 = e->gen_x + e->gen_w / 2;
+                edge->ged_y2 = e->gen_y + 20 + (e_idx * 30) % (e->gen_h - 40);
+            } else if (e->gen_y + e->gen_h <= edge->ged_y1) { // Entity is above
+                edge->ged_x2 = e->gen_x + 20 + (e_idx * 30) % (e->gen_w - 40);
                 edge->ged_y2 = e->gen_y + e->gen_h;
-            } else {
-                // Entity below -> Bottom vertex
-                edge->ged_x1 = rel->gre_x + rel->gre_w / 2;
-                edge->ged_y1 = rel->gre_y + rel->gre_h;
-                edge->ged_x2 = e->gen_x + e->gen_w / 2;
+            } else { // Entity is below
+                edge->ged_x2 = e->gen_x + 20 + (e_idx * 30) % (e->gen_w - 40);
                 edge->ged_y2 = e->gen_y;
             }
-
-            // Offset to avoid generalization arrow collisions
-            if (is_parent_entity(graph, e) && edge->ged_y2 == e->gen_y + e->gen_h) edge->ged_x2 -= 40;
-            if (e->gen_specifies != NULL && edge->ged_y2 == e->gen_y) edge->ged_x2 += 40;
+            e_idx++;
         }
     }
 }

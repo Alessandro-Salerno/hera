@@ -44,6 +44,8 @@ struct ER_GraphEntity {
     ER_i32            gen_y;
     ER_i32            gen_w;
     ER_i32            gen_h;
+    ER_i32            gen_layer;
+    ER_i32            gen_col;
     UT_hash_handle    gen_hh;
 };
 

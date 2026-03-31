@@ -71,13 +71,11 @@ static void svg_emit_relation(ER_GraphRelation *rel) {
 }
 
 static void svg_emit_edge(ER_GraphEdge *edge) {
-    // 3-segment orthogonal routing to ensure separation
     ER_i32 x1 = edge->ged_x1, y1 = edge->ged_y1;
     ER_i32 x2 = edge->ged_x2, y2 = edge->ged_y2;
 
-    if (y1 == y2) {
-        printf("<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" stroke=\"black\" stroke-width=\"2\" />\n", x1, y1, x2, y2);
-    } else if (x1 == x2) {
+    // Intelligent orthogonal routing
+    if (y1 == y2 || x1 == x2) {
         printf("<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" stroke=\"black\" stroke-width=\"2\" />\n", x1, y1, x2, y2);
     } else {
         ER_i32 mid_x = (x1 + x2) / 2;
@@ -85,11 +83,11 @@ static void svg_emit_edge(ER_GraphEdge *edge) {
                x1, y1, mid_x, y1, mid_x, y2, x2, y2);
     }
 
-    // Cardinality labels
+    // Cardinality labels: always near the entity side (x2, y2)
     ER_i32 lx = x2, ly = y2;
     if (x2 < x1) lx += 5; else lx -= 45;
     if (y2 < y1) ly += 15; else ly -= 5;
-    
+
     printf("<text x=\"%d\" y=\"%d\" font-family=\"monospace\" font-size=\"%d\" font-weight=\"bold\" fill=\"%s\">(%.*s, %.*s)</text>\n",
            lx, ly, ER_SVG_FONT_SIZE_S, ER_SVG_CARD_COLOR,
            ER_STRING_PRINTF(edge->ged_astnode->ref_lcard.tok_value),
@@ -105,11 +103,15 @@ static void svg_emit_generalizations(ER_Graph *graph) {
             if (child->gen_specifies == parent) child_count++;
         }
         if (child_count == 0) continue;
+
         ER_i32 px = parent->gen_x + parent->gen_w / 2;
         ER_i32 py = parent->gen_y + parent->gen_h;
         ER_i32 merge_y = py + ER_SVG_GEN_MERGE_Y_OFF;
+
+        // Stem to parent with arrowhead
         printf("<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" stroke=\"black\" stroke-width=\"3\" marker-end=\"url(#arrow%s)\" />\n",
                px, merge_y, px, py, (parent->gen_astnode->ent_flags & ER_ENTITY_FLAGS_TOTAL) ? "Total" : "Partial");
+
         ER_i32 min_x = px, max_x = px;
         HASH_ITER(gen_hh, graph->gr_entities, child, tmp_child) {
             if (child->gen_specifies != parent) continue;
@@ -119,7 +121,9 @@ static void svg_emit_generalizations(ER_Graph *graph) {
             if (cx > max_x) max_x = cx;
             printf("<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" stroke=\"black\" stroke-width=\"2\" />\n", cx, cy, cx, merge_y);
         }
-        if (min_x != max_x || min_x != px) printf("<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" stroke=\"black\" stroke-width=\"2\" />\n", min_x, merge_y, max_x, merge_y);
+        if (min_x != max_x || min_x != px) {
+            printf("<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" stroke=\"black\" stroke-width=\"2\" />\n", min_x, merge_y, max_x, merge_y);
+        }
     }
 }
 
