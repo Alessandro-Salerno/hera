@@ -45,6 +45,7 @@ static void svg_emit_attributes(ER_ASTNode *first, ER_i32 x, ER_i32 y) {
 }
 
 static void svg_emit_entity(ER_GraphEntity *ent) {
+    printf("<g id=\"entity_%.*s\">\n", ER_STRING_PRINTF(ent->gen_astnode->ent_name));
     printf("<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" fill=\"white\" stroke=\"black\" stroke-width=\"2\" />\n",
            ent->gen_x, ent->gen_y, ent->gen_w, ent->gen_h);
     
@@ -55,9 +56,11 @@ static void svg_emit_entity(ER_GraphEntity *ent) {
            ent->gen_x, ent->gen_y + 35, ent->gen_x + ent->gen_w, ent->gen_y + 35);
 
     svg_emit_attributes(TAILQ_FIRST(&ent->gen_astnode->ent_attributes), ent->gen_x + 10, ent->gen_y + 55);
+    printf("</g>\n");
 }
 
 static void svg_emit_relation(ER_GraphRelation *rel) {
+    printf("<g id=\"relation_%.*s\">\n", ER_STRING_PRINTF(rel->gre_astnode->rel_name));
     ER_i32 cx = rel->gre_x + rel->gre_w / 2;
     ER_i32 cy = rel->gre_y + rel->gre_h / 2;
 
@@ -68,9 +71,11 @@ static void svg_emit_relation(ER_GraphRelation *rel) {
            cx, cy + 5, ER_SVG_FONT_SIZE_L, ER_STRING_PRINTF(rel->gre_astnode->rel_name));
 
     svg_emit_attributes(TAILQ_FIRST(&rel->gre_astnode->rel_attributes), rel->gre_x + 10, rel->gre_y + rel->gre_h + 20);
+    printf("</g>\n");
 }
 
 static void svg_emit_edge(ER_GraphEdge *edge) {
+    printf("<g class=\"edge\">\n");
     ER_i32 x1 = edge->ged_x1, y1 = edge->ged_y1;
     ER_i32 x2 = edge->ged_x2, y2 = edge->ged_y2;
 
@@ -92,6 +97,7 @@ static void svg_emit_edge(ER_GraphEdge *edge) {
            lx, ly, ER_SVG_FONT_SIZE_S, ER_SVG_CARD_COLOR,
            ER_STRING_PRINTF(edge->ged_astnode->ref_lcard.tok_value),
            ER_STRING_PRINTF(edge->ged_astnode->ref_rcard.tok_value));
+    printf("</g>\n");
 }
 
 static void svg_emit_generalizations(ER_Graph *graph) {
@@ -104,6 +110,7 @@ static void svg_emit_generalizations(ER_Graph *graph) {
         }
         if (child_count == 0) continue;
 
+        printf("<g class=\"generalization\">\n");
         ER_i32 px = parent->gen_x + parent->gen_w / 2;
         ER_i32 py = parent->gen_y + parent->gen_h;
         ER_i32 merge_y = py + ER_SVG_GEN_MERGE_Y_OFF;
@@ -124,6 +131,7 @@ static void svg_emit_generalizations(ER_Graph *graph) {
         if (min_x != max_x || min_x != px) {
             printf("<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" stroke=\"black\" stroke-width=\"2\" />\n", min_x, merge_y, max_x, merge_y);
         }
+        printf("</g>\n");
     }
 }
 
@@ -139,14 +147,26 @@ void er_svg_emit(ER_Graph *graph) {
     printf("  </marker>\n");
     printf("</defs>\n");
 
+    printf("<g id=\"edges\">\n");
     ER_GraphRelation *rel, *tmp_rel;
     HASH_ITER(gre_hh, graph->gr_relations, rel, tmp_rel) {
         ER_GraphEdge *edge;
         TAILQ_FOREACH(edge, &rel->gre_edges, ged_link) { svg_emit_edge(edge); }
     }
+    printf("</g>\n");
+
+    printf("<g id=\"generalizations\">\n");
     svg_emit_generalizations(graph);
+    printf("</g>\n");
+
+    printf("<g id=\"entities\">\n");
     ER_GraphEntity *ent, *tmp_ent;
     HASH_ITER(gen_hh, graph->gr_entities, ent, tmp_ent) { svg_emit_entity(ent); }
+    printf("</g>\n");
+
+    printf("<g id=\"relations\">\n");
     HASH_ITER(gre_hh, graph->gr_relations, rel, tmp_rel) { svg_emit_relation(rel); }
+    printf("</g>\n");
+
     printf("</svg>\n");
 }
