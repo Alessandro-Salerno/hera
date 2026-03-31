@@ -51,4 +51,4 @@ typedef enum ER_Status {
     ER_STATUS_ERR
 } ER_Status;
 
-void *er_result_unwrap_impl(void *val, ER_Status status, const char *message);
+void *ER_result_unwrap_impl(void *val, ER_Status status, const char *message);

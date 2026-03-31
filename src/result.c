@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-void *er_result_unwrap_impl(void *val, ER_Status status, const char *message) {
+void *ER_result_unwrap_impl(void *val, ER_Status status, const char *message) {
     if (ER_STATUS_OK == status) {
         return val;
     }
