@@ -50,4 +50,4 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ER_SVG_KEY_ATTR_COLOR "blue"
 #define ER_SVG_CARD_COLOR     "darkred"
 
-void er_svg_emit(ER_Graph *graph);
+void ER_svg_emit(ER_Graph *graph);

@@ -86,4 +86,4 @@ typedef struct ER_ASTAttributeNode {
 
 typedef ER_RESULT(ER_ASTRootNode) ER_ParserResult;
 
-ER_ParserResult er_parser_run(ER_TokenList tokens);
+ER_ParserResult ER_parser_run(ER_TokenList tokens);

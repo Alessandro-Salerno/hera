@@ -58,7 +58,7 @@ int main(int argc, const char *const argv[]) {
     fread(source_buf, 1, source_len, source_file);
 
     ER_String s = (ER_String){.str_buf = source_buf, .str_len = source_len};
-    ER_LexerResult lex_res = er_lexer_run(s);
+    ER_LexerResult lex_res = ER_lexer_run(s);
     ER_TokenList   tokens  = *(ER_TokenList *)ER_RESULT_UNWRAP(lex_res);
 
     /*for (ER_u64 i = 0; i < EZLD_ARRAY_LENGTH(tokens); i++) {
@@ -69,14 +69,14 @@ int main(int argc, const char *const argv[]) {
                token->tok_type);
     }*/
 
-    ER_ParserResult par_res  = er_parser_run(tokens);
+    ER_ParserResult par_res  = ER_parser_run(tokens);
     ER_ASTRootNode *ast_root = ER_RESULT_UNWRAP(par_res);
 
-    ER_GraphResult graph_res = er_graph_compute(ast_root);
+    ER_GraphResult graph_res = ER_graph_compute(ast_root);
     ER_Graph      *graph     = ER_RESULT_UNWRAP(graph_res);
 
-    er_graph_place(graph);
-    er_svg_emit(graph);
+    ER_graph_place(graph);
+    ER_svg_emit(graph);
 
     return EXIT_SUCCESS;
 }

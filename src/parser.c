@@ -300,7 +300,7 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
     return parser_node_ok((ER_ASTNode *)relation);
 }
 
-ER_ParserResult er_parser_run(ER_TokenList tokens) {
+ER_ParserResult ER_parser_run(ER_TokenList tokens) {
     ParserState parser = {0};
     parser.par_tokens  = tokens;
 

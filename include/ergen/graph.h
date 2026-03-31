@@ -78,5 +78,5 @@ typedef struct ER_Graph {
 
 typedef ER_RESULT(ER_Graph) ER_GraphResult;
 
-ER_GraphResult er_graph_compute(ER_ASTRootNode *ast_root);
-void           er_graph_place(ER_Graph *graph);
+ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root);
+void           ER_graph_place(ER_Graph *graph);

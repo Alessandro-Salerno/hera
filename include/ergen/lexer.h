@@ -62,4 +62,4 @@ typedef struct ER_Token {
 typedef EZLD_ARRAY(ER_Token) ER_TokenList;
 typedef ER_RESULT(ER_TokenList) ER_LexerResult;
 
-ER_LexerResult er_lexer_run(ER_String input);
+ER_LexerResult ER_lexer_run(ER_String input);

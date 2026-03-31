@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }
 
 #define ER_RESULT_UNWRAP(result)               \
-    er_result_unwrap_impl(&(result).res_val,   \
+    ER_result_unwrap_impl(&(result).res_val,   \
                           (result).res_status, \
                           (result).res_err)
 

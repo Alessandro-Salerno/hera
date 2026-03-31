@@ -126,7 +126,7 @@ static inline ER_GraphResult graph_ok(ER_Graph graph) {
     return (ER_GraphResult){.res_status = ER_STATUS_OK, .res_val = graph};
 }
 
-ER_GraphResult er_graph_compute(ER_ASTRootNode *ast_root) {
+ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
     // NOTE: zeroeing this structure causes pointer fields to become NULL, which
     // constitutes implicit initialization as per uthash documentation
     ER_Graph graph = {0};
@@ -228,7 +228,7 @@ static ER_i32 graph_get_tree_height(ER_Graph *graph, ER_GraphEntity *ent) {
     return ent->gen_h + (max_child_h > 0 ? 100 + max_child_h : 0);
 }
 
-void er_graph_place(ER_Graph *graph) {
+void ER_graph_place(ER_Graph *graph) {
     ER_GraphRelation *rel, *tmp_rel;
 
     // Phase 1: Sizes and Layers

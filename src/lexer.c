@@ -303,7 +303,7 @@ static LexerInstruction lexer_number_handler(char c) {
                               .li_toktype    = ER_TOKEN_TYPE_NUMBER};
 }
 
-ER_LexerResult er_lexer_run(ER_String input) {
+ER_LexerResult ER_lexer_run(ER_String input) {
     LexerCharHandler *handler = lexer_base_handler;
     LexerState        lexer   = {0};
     lexer.ls_input            = input;

@@ -240,7 +240,7 @@ static void svg_emit_generalizations(ER_Graph *graph) {
     }
 }
 
-void er_svg_emit(ER_Graph *graph) {
+void ER_svg_emit(ER_Graph *graph) {
     printf("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
     printf("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" "
            "height=\"%d\">\n",
