@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <assert.h>
 #include <ergen/lexer.h>
+#include <ergen/util.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -38,10 +39,8 @@ typedef enum LexerAction {
     LEXER_ACTION_PUSH
 } LexerAction;
 
-typedef ER_RESULT(char) LexerFetchResult;
-
 typedef struct LexerInstruction LexerInstruction;
-typedef LexerInstruction        LexerCharHandler(char c);
+typedef LexerInstruction        LexerCharHandler(ER_WChar c);
 
 struct LexerInstruction {
     LexerCharHandler *li_handler;
@@ -55,27 +54,42 @@ typedef struct LexerState {
     ER_u64    ls_next;
     ER_u64    ls_row;
     ER_u64    ls_col;
+    ER_u64    ls_bincol;
 } LexerState;
 
 // Utilities
 
-static LexerFetchResult lexer_fetch_result(char c) {
-    return (LexerFetchResult){.res_status = ER_STATUS_OK, .res_val = c};
+static ER_WCharResult lexer_fetch_result(ER_WChar c) {
+    return (ER_WCharResult){.res_status = ER_STATUS_OK, .res_val = c};
+}
+
+static ER_u64 lexer_char_width(LexerState *lexer) {
+    return ER_RESULT_GET(
+        ER_char_width(ER_STRING_SUB(lexer->ls_input, lexer->ls_next)));
 }
 
 static void lexer_step(LexerState *lexer) {
-    lexer->ls_next++;
+    // we do ER_RESULT_GET here because this cannot fail since step is only ever
+    // called after a character fetch and the character fetch would have already
+    // failed if the length was invalid
+    ER_u64 char_w = lexer_char_width(lexer);
+    // we step the column only by one because this is used for accounting, not
+    // binary access
     lexer->ls_col++;
+    // and we advance binary indicators by char_w
+    lexer->ls_next += char_w;
+    lexer->ls_bincol += char_w;
 }
 
-static void lexer_step_back(LexerState *lexer) {
-    lexer->ls_next--;
-    lexer->ls_col--;
+static void lexer_reset_row(LexerState *lexer) {
+    lexer->ls_row++;
+    lexer->ls_col    = 1;
+    lexer->ls_bincol = 0;
 }
 
-static LexerFetchResult lexer_peek(LexerState *lexer) {
+static ER_WCharResult lexer_peek(LexerState *lexer) {
     if (lexer->ls_next > lexer->ls_input.str_len) {
-        return (LexerFetchResult){
+        return (ER_WCharResult){
             .res_status = ER_STATUS_ERR,
             .res_err    = "attempt at character lookup past end of file"};
     }
@@ -84,24 +98,15 @@ static LexerFetchResult lexer_peek(LexerState *lexer) {
         return lexer_fetch_result(EOF);
     }
 
-    return lexer_fetch_result(lexer->ls_input.str_buf[lexer->ls_next]);
+    return ER_char_to_wchar(ER_STRING_SUB(lexer->ls_input, lexer->ls_next));
 }
 
-static LexerFetchResult lexer_consume(LexerState *lexer) {
-    LexerFetchResult r = lexer_peek(lexer);
-
-    if (ER_RESULT_OK(r)) {
-        lexer_step(lexer);
-    }
-
-    return r;
+static bool lexer_is_keyword_identifier_char(ER_WChar c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || '_' == c ||
+           c > 127;
 }
 
-static bool lexer_is_keyword_identifier_char(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || '_' == c;
-}
-
-static bool lexer_is_number_char(char c) {
+static bool lexer_is_number_char(ER_WChar c) {
     return c >= '0' && c <= '9';
 }
 
@@ -131,18 +136,18 @@ static ER_TokenType lexer_token_type(ER_String buffer, ER_TokenType hint) {
 
 // Handlers
 
-static LexerInstruction lexer_base_handler(char c);
-static LexerInstruction lexer_comment_handler(char c);
-static LexerInstruction lexer_comment2_handler(char c);
-static LexerInstruction lexer_string_handler(char c);
-static LexerInstruction lexer_keyword_identifier_handler(char c);
-static LexerInstruction lexer_number_handler(char c);
+static LexerInstruction lexer_base_handler(ER_WChar c);
+static LexerInstruction lexer_comment_handler(ER_WChar c);
+static LexerInstruction lexer_comment2_handler(ER_WChar c);
+static LexerInstruction lexer_string_handler(ER_WChar c);
+static LexerInstruction lexer_keyword_identifier_handler(ER_WChar c);
+static LexerInstruction lexer_number_handler(ER_WChar c);
 
 // NOTE: this function is written  assuming that the base state is never entered
 // with a half-full token buffer (i.e, LEXER_ACTION_IGNORE is used to switch to
 // some states with the assumption that the previous token was already pushed by
 // the previous handler )
-static LexerInstruction lexer_base_handler(char c) {
+static LexerInstruction lexer_base_handler(ER_WChar c) {
     // special cases
     switch (c) {
         case ' ':
@@ -224,7 +229,7 @@ static LexerInstruction lexer_base_handler(char c) {
     return (LexerInstruction){.li_handler = NULL};
 }
 
-static LexerInstruction lexer_comment_handler(char c) {
+static LexerInstruction lexer_comment_handler(ER_WChar c) {
     // expect second / (//)
     if ('/' == c) {
         return (LexerInstruction){.li_handler    = lexer_comment2_handler,
@@ -236,12 +241,12 @@ static LexerInstruction lexer_comment_handler(char c) {
     return (LexerInstruction){.li_handler = NULL};
 }
 
-static LexerInstruction lexer_comment2_handler(char c) {
+static LexerInstruction lexer_comment2_handler(ER_WChar c) {
     // break the comment if a new line is found
     if ('\n' == c) {
         return (LexerInstruction){.li_handler    = lexer_base_handler,
                                   .li_charaction = LEXER_ACTION_DISCARD,
-                                  .li_tokaction  = LEXER_ACTION_IGNORE,
+                                  .li_tokaction  = LEXER_ACTION_DISCARD,
                                   .li_toktype    = ER_TOKEN_TYPE_NONE};
     }
 
@@ -252,7 +257,7 @@ static LexerInstruction lexer_comment2_handler(char c) {
                               .li_toktype    = ER_TOKEN_TYPE_NONE};
 }
 
-static LexerInstruction lexer_string_handler(char c) {
+static LexerInstruction lexer_string_handler(ER_WChar c) {
     // terminate the string (found closing quote)
     if ('"' == c) {
         return (LexerInstruction){.li_handler    = lexer_base_handler,
@@ -272,7 +277,7 @@ static LexerInstruction lexer_string_handler(char c) {
                               .li_toktype    = ER_TOKEN_TYPE_NONE};
 }
 
-static LexerInstruction lexer_keyword_identifier_handler(char c) {
+static LexerInstruction lexer_keyword_identifier_handler(ER_WChar c) {
     if (lexer_is_keyword_identifier_char(c) || lexer_is_number_char(c)) {
         return (LexerInstruction){
             .li_handler    = lexer_keyword_identifier_handler,
@@ -289,7 +294,7 @@ static LexerInstruction lexer_keyword_identifier_handler(char c) {
                               .li_toktype    = ER_TOKEN_TYPE_NONE};
 }
 
-static LexerInstruction lexer_number_handler(char c) {
+static LexerInstruction lexer_number_handler(ER_WChar c) {
     if (lexer_is_keyword_identifier_char(c) || lexer_is_number_char(c)) {
         return (LexerInstruction){.li_handler    = lexer_number_handler,
                                   .li_charaction = LEXER_ACTION_PUSH,
@@ -312,13 +317,19 @@ ER_LexerResult ER_lexer_run(ER_String input) {
     ER_Token     curr_token        = {0};
     LexerAction  curr_token_action = LEXER_ACTION_DISCARD;
 
-    LexerFetchResult fetch_result;
-    while ((fetch_result = lexer_consume(&lexer)), ER_RESULT_OK(fetch_result)) {
-        char   curr_char = ER_RESULT_GET(fetch_result);
-        ER_u64 curr_off  = lexer.ls_next - 1;
-        ER_u64 end_off   = curr_off + 1;
-        ER_u64 curr_row  = lexer.ls_row;
-        ER_u64 curr_col  = lexer.ls_col;
+    ER_WCharResult fetch_result;
+    while ((fetch_result = lexer_peek(&lexer)), ER_RESULT_OK(fetch_result)) {
+        ER_WChar curr_char       = ER_RESULT_GET(fetch_result);
+        ER_u64   curr_char_width = lexer_char_width(&lexer); // see lexer_step
+        ER_u64   curr_off        = lexer.ls_next;
+        ER_u64   end_off         = curr_off + curr_char_width;
+        ER_u64   curr_row        = lexer.ls_row;
+        ER_u64   curr_col        = lexer.ls_col;
+        bool     advance         = true;
+
+        if ('\n' == curr_char) {
+            lexer_reset_row(&lexer);
+        }
 
         // invariant: curr_token initialization always happens here
         // NOTE: no special case for first iteration or similar
@@ -328,6 +339,7 @@ ER_LexerResult ER_lexer_run(ER_String input) {
             curr_token.tok_off           = curr_off;
             curr_token.tok_row           = curr_row;
             curr_token.tok_col           = curr_col;
+            curr_token.tok_rowoff        = lexer.ls_bincol;
             curr_token.tok_type          = ER_TOKEN_TYPE_NONE;
             curr_token_action            = LEXER_ACTION_IGNORE;
         }
@@ -336,23 +348,22 @@ ER_LexerResult ER_lexer_run(ER_String input) {
 
         // if the handler threw an error
         if (NULL == instruction.li_handler) {
-            lexer_step_back(&lexer);
             // TODO: display error
             EZLD_ARRAY_FREE(tokens);
             return (ER_LexerResult){.res_status = ER_STATUS_ERR,
                                     .res_err    = "lexical analysis failed"};
         }
 
-        // handle char action
+        // handle ER_WChar action
         switch (instruction.li_charaction) {
             case LEXER_ACTION_DISCARD:
                 assert(0 != curr_off ||
                        LEXER_ACTION_PUSH != instruction.li_tokaction);
-                end_off--;
+                end_off -= curr_char_width;
                 break;
             case LEXER_ACTION_IGNORE:
-                lexer_step_back(&lexer);
-                end_off--;
+                end_off -= curr_char_width;
+                advance = false;
                 break;
             case LEXER_ACTION_PUSH:
                 break;
@@ -376,6 +387,9 @@ ER_LexerResult ER_lexer_run(ER_String input) {
         }
 
         handler = instruction.li_handler;
+        if (advance) {
+            lexer_step(&lexer);
+        }
     }
 
     return (ER_LexerResult){.res_status = ER_STATUS_OK, .res_val = tokens};

@@ -36,6 +36,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         .str_buf = str, .str_len = strlen(str) \
     }
 
+#define ER_STRING_SUB(s, at)                                     \
+    (ER_String) {                                                \
+        .str_buf = (s).str_buf + at, .str_len = (s).str_len - at \
+    }
+
 #define ER_STRING_EQ(s1, s2)         \
     ((s1).str_len == (s2).str_len && \
      0 == memcmp((s1).str_buf, (s2).str_buf, (s1).str_len))
@@ -55,6 +60,8 @@ typedef int8_t  ER_i8;
 typedef int16_t ER_i16;
 typedef int32_t ER_i32;
 typedef int64_t ER_i64;
+
+typedef ER_u32 ER_WChar;
 
 // For the purposes of this project, having a remote pointer is more effective
 // than a flexible array member with __attribute__((counted_by)) or a fat

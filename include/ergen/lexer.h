@@ -56,6 +56,7 @@ typedef struct ER_Token {
     ER_u64       tok_off;
     ER_u64       tok_row;
     ER_u64       tok_col;
+    ER_u64       tok_rowoff; // = tok_col for ASCII, >= for UTF-8
     ER_TokenType tok_type;
 } ER_Token;
 

@@ -1,52 +1,76 @@
-entity Studente {
-    attribute s_id key;
-    attribute s_cf;
-    attribute s_cognome;
-    attribute s_genere;
-    attribute s_luogonascita;
-    attribute s_indirizzo;
-    attribute s_telefono;
+// Si vuole realizzare una base di dati per una società che eroga corsi,
+// di cui vogliamo rappresentare i dati dei partecipanti ai corsi e dei
+// docenti. Per gli studenti (circa 5000), identificati da un codice, si
+// vuole memorizzare il codice fiscale, il cognome, l'età, il sesso, il luogo
+// di nascita, il nome dei loro attuali datori di lavoro, i posti dove hanno
+// lavorato in precedenza insieme al periodo, l'indirizzo e il numero di
+// telefono, i corsi che hanno frequentato (i corsi sono in tutto circa
+// 200) e il giudizio finale. Rappresentiamo anche i seminari che stanno
+// attualmente frequentando e, per ogni giorno, i luoghi e le ore dove
+// sono tenute le lezioni. I corsi hanno un codice, un titolo e possono
+// avere varie edizioni con date di inizio e fine e numero di
+// partecipanti. Se gli studenti sono liberi professionisti, vogliamo
+// conoscere l'area di interesse e, se lo possiedono, il titolo. Per quelli
+// che lavorano alle dipendenze di altri, vogliamo conoscere invece il
+// loro livello e la posizione ricoperta. Per gli insegnanti (circa 300),
+// rappresentiamo il cognome, l'età, il posto dove sono nati, il nome
+// del corso che insegnano, quelli che hanno insegnato nel passato e
+// quelli che possono insegnare. Rappresentiamo anche tutti i loro
+// recapiti telefonici. I docenti possono essere dipendenti interni della
+// società o collaboratori esterni.
+
+total entity Studente {
+    attribute "Codice fiscalè" key;
+    attribute "Cognome";
+    attribute "Genere";
+    attribute "Luogo di nascita";
+    attribute "Indirizzo";
+    attribute "Numero di telefono";
 }
 
-entity DatoreDiLavoro {
-    attribute dl_id key;
-    attribute dl_nome;
+entity "Studente dipendente" specifies Studente {
+    attribute "Identificatore" key;
 }
 
-entity Azienda specifies DatoreDiLavoro {
-    attribute a_id key;
+entity "Studente autonomo" specifies Studente {
+    attribute "Identificatore" key; 
+    attribute "Area di interesse"; 
+    attribute "Titolo di studi";
 }
 
-entity Autonomo specifies DatoreDiLavoro {
-    attribute at_id key;
-    attribute at_areainteresse;
-    attribute at_titolo;
+total entity "Datore di lavoro" {
+    attribute "Nome" key;
+    attribute "Indirizzo sede";
 }
 
-relation Lavoro {
+relation "Rapporto lavorativo attivo" {
+    entity "Studente dipendente" (1, 1);
+    entity "Datore di lavoro" (0, N);
+}
+
+relation "Rapporto di lavoro passato" {
     entity Studente (0, N);
-    entity DatoreDiLavoro (0, N);
+    entity "Datore di lavoro" (1, N);
 
-    attribute l_datainizio;
-    attribute l_datafine;
+    attribute "Data inizio";
+    attribute "Data fine";
 
-    attribute l_livello;
-    attribute l_posizione;
+    attribute "Livello";
+    attribute "Posizione ricoperta";
 }
 
 entity Corso {
-    attribute c_id key;
-    attribute c_titolo;
-    attribute c_datainizio;
-    attribute c_datafine;
-    attribute c_numeropartecipanti;
+    attribute "Titolo" key;
+    attribute "Edizione" key;
+    attribute "Data inizio";
+    attribute "Data fine";
+    attribute "Numero di partecipanti";
 }
 
 entity Lezione {
-    attribute lz_id key;
-    attribute lz_data;
-    attribute lz_ora;
-    attribute lz_durata;
+    attribute "Data" key;
+    attribute "Ora" key;
+    attribute "Durata";
 }
 
 relation Appartiene {
@@ -57,29 +81,45 @@ relation Appartiene {
 relation Frequenta {
     entity Studente (0, N);
     entity Corso (0, N);
-
-    attribute f_voto;
 }
 
-entity Insegnante {
-    attribute i_id key;
-    attribute i_cognome;
-    attribute i_eta; 
-    attribute i_luogonascita;
-    attribute i_telefono;
-    attribute i_mail;
-    attribute i_status; // interno o collaboratore
+relation "Ha frequentato" {
+    entity Studente (0, N);
+    entity Corso (0, N);
+
+    attribute "Giudizio finale";
+}
+
+total entity Insegnante {
+    attribute "Codice fiscale" key;
+    attribute "Cognome";
+    attribute "Data di nascita"; 
+    attribute "Luogo di nascita";
+    attribute "Numero di telefono";
+    attribute "Indirizzo mail";
+}
+
+entity "Insegnante interno" specifies Insegnante {
+    attribute "Identificatore" key;
+    attribute "Data assunzione";
+    attribute "Stipendio";
+}
+
+entity "Insegnante collaboratore" specifies Insegnante {
+    attribute "Identificatore" key;
+    attribute "Numero di Partita IVA";
+    attribute "Tipo di contratto";
 }
 
 relation Insegna {
     entity Insegnante (0, N);
     entity Corso (0, N);
 
-    attribute in_datainizio;
-    attribute in_datafine;
+    attribute "Data inizio";
+    attribute "Data fine";
 }
 
-relation Abilitato {
+relation Abilitaone {
     entity Insegnante (0, N);
     entity Corso (0, N);
 }
