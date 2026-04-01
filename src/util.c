@@ -99,5 +99,5 @@ void ER_generic_panic_output(ER_String   input,
         }
     }
 
-    fprintf(stderr, COLOR_RESET "\n");
+    fprintf(stderr, COLOR_RESET);
 }

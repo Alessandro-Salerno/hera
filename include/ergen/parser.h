@@ -58,32 +58,32 @@ typedef struct ER_ASTRootNode {
 
 typedef struct ER_ASTEntityNode {
     ER_ASTNode ent_node;
-    ER_String  ent_name;
-    ER_String  ent_specifies;
+    ER_Token   ent_name;
+    ER_Token   ent_specifies;
     ER_u64     ent_flags;
     TAILQ_HEAD(, ER_ASTNode) ent_attributes;
 } ER_ASTEntityNode;
 
 typedef struct ER_ASTReferenceNode {
     ER_ASTNode ref_node;
-    ER_String  ref_entname;
+    ER_Token   ref_entname;
     ER_Token   ref_lcard;
     ER_Token   ref_rcard;
 } ER_ASTReferenceNode;
 
 typedef struct ER_ASTRelationNode {
     ER_ASTNode rel_node;
-    ER_String  rel_name;
+    ER_Token   rel_name;
     TAILQ_HEAD(, ER_ASTNode) rel_entities;   // of type ER_ASTReferenceNode
     TAILQ_HEAD(, ER_ASTNode) rel_attributes; // of type ER_ASTAttributeNode
 } ER_ASTRelationNode;
 
 typedef struct ER_ASTAttributeNode {
     ER_ASTNode atr_node;
-    ER_String  atr_name;
+    ER_Token   atr_name;
     ER_u64     atr_flags;
 } ER_ASTAttributeNode;
 
 typedef ER_RESULT(ER_ASTRootNode) ER_ParserResult;
 
-ER_ParserResult ER_parser_run(ER_TokenList tokens);
+ER_ParserResult ER_parser_run(ER_TokenList tokens, ER_String input);

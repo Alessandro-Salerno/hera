@@ -54,14 +54,14 @@ static void svg_emit_attributes(ER_ASTNode *first, ER_i32 x, ER_i32 y) {
             weight,
             color,
             decor,
-            ER_STRING_PRINTF(atrn->atr_name));
+            ER_STRING_PRINTF(atrn->atr_name.tok_value));
         curr_y += ER_SVG_ATTR_H_STEP;
     }
 }
 
 static void svg_emit_entity(ER_GraphEntity *ent) {
     printf("<g id=\"entity_%.*s\">\n",
-           ER_STRING_PRINTF(ent->gen_astnode->ent_name));
+           ER_STRING_PRINTF(ent->gen_astnode->ent_name.tok_value));
     printf("<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" fill=\"white\" "
            "stroke=\"black\" stroke-width=\"2\" />\n",
            ent->gen_x,
@@ -74,7 +74,7 @@ static void svg_emit_entity(ER_GraphEntity *ent) {
            ent->gen_x + ent->gen_w / 2,
            ent->gen_y + 25,
            ER_SVG_FONT_SIZE_L,
-           ER_STRING_PRINTF(ent->gen_astnode->ent_name));
+           ER_STRING_PRINTF(ent->gen_astnode->ent_name.tok_value));
 
     printf("<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" stroke=\"black\" "
            "stroke-width=\"1\" />\n",
@@ -91,7 +91,7 @@ static void svg_emit_entity(ER_GraphEntity *ent) {
 
 static void svg_emit_relation(ER_GraphRelation *rel) {
     printf("<g id=\"relation_%.*s\">\n",
-           ER_STRING_PRINTF(rel->gre_astnode->rel_name));
+           ER_STRING_PRINTF(rel->gre_astnode->rel_name.tok_value));
     ER_i32 cx = rel->gre_x + rel->gre_w / 2;
     ER_i32 cy = rel->gre_y + rel->gre_h / 2;
 
@@ -111,7 +111,7 @@ static void svg_emit_relation(ER_GraphRelation *rel) {
            cx,
            cy + 5,
            ER_SVG_FONT_SIZE_L,
-           ER_STRING_PRINTF(rel->gre_astnode->rel_name));
+           ER_STRING_PRINTF(rel->gre_astnode->rel_name.tok_value));
 
     svg_emit_attributes(TAILQ_FIRST(&rel->gre_astnode->rel_attributes),
                         rel->gre_x + 10,

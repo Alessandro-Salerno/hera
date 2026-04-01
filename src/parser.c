@@ -31,11 +31,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // will still exit shortly after the error here
 
 #include <ergen/parser.h>
+#include <ergen/util.h>
 #include <stdbool.h>
 
 typedef struct ParserState {
     ER_TokenList par_tokens;
     ER_u64       par_index;
+    ER_String    par_input;
 } ParserState;
 
 typedef ER_RESULT(ER_Token) ParserExpectResult;
@@ -80,6 +82,30 @@ static ParserNodeResult parser_node_err_expect(ParserExpectResult err) {
     return parser_node_err(err.res_err);
 }
 
+static void parser_panic_handler(void *arg) {
+    ParserState *parser = arg;
+    ER_Token     tok    = parser_peek(parser);
+
+    ER_generic_panic_output(parser->par_input,
+                            tok.tok_row,
+                            tok.tok_col,
+                            tok.tok_rowstart,
+                            tok.tok_col - 1,
+                            tok.tok_value.str_len,
+                            "unexpected token '%.*s'",
+                            ER_STRING_PRINTF(tok.tok_value));
+}
+
+static ER_ParserResult parser_panic(ParserState *parser) {
+    ParserState *snapshot = calloc(1, sizeof(*snapshot));
+    assert(NULL != snapshot);
+    *snapshot = *parser;
+
+    return (ER_ParserResult){.res_status       = ER_STATUS_PANIC,
+                             .res_panicarg     = snapshot,
+                             .res_panichandler = parser_panic_handler};
+}
+
 // Parser logic
 
 ParserNodeResult parser_do_attribute(ParserState *parser) {
@@ -90,13 +116,11 @@ ParserNodeResult parser_do_attribute(ParserState *parser) {
         return parser_node_err_expect(name_tok_res);
     }
 
-    ER_Token  name_tok = ER_RESULT_GET(name_tok_res);
-    ER_String name     = name_tok.tok_value;
-
-    ER_ASTAttributeNode *node = calloc(1, sizeof(*node));
+    ER_Token             name_tok = ER_RESULT_GET(name_tok_res);
+    ER_ASTAttributeNode *node     = calloc(1, sizeof(*node));
     assert(NULL != node);
     node->atr_node.an_type = ER_AST_NODE_TYPE_ATTRIBUTE;
-    node->atr_name         = name;
+    node->atr_name         = name_tok;
 
     if (parser_matches_types(parser, ER_TOKEN_TYPE_KEY)) {
         node->atr_flags |= ER_ATTRIBUTE_FLAGS_KEY;
@@ -113,13 +137,11 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
         return parser_node_err_expect(name_tok_res);
     }
 
-    ER_Token  name_tok    = ER_RESULT_GET(name_tok_res);
-    ER_String entity_name = name_tok.tok_value;
-
-    ER_ASTEntityNode *entity = calloc(1, sizeof(*entity));
+    ER_Token          name_tok = ER_RESULT_GET(name_tok_res);
+    ER_ASTEntityNode *entity   = calloc(1, sizeof(*entity));
     assert(NULL != entity);
     entity->ent_node.an_type = ER_AST_NODE_TYPE_ENTITY;
-    entity->ent_name         = entity_name;
+    entity->ent_name         = name_tok;
     TAILQ_INIT(&entity->ent_attributes);
 
     // handle optional [specifies <name>]
@@ -132,7 +154,7 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
         }
 
         ER_Token parent_tok   = ER_RESULT_GET(parent_name_res);
-        entity->ent_specifies = parent_tok.tok_value;
+        entity->ent_specifies = parent_tok;
         entity->ent_flags |= ER_ENTITY_FLAGS_SPECIFIES;
     }
 
@@ -193,12 +215,11 @@ ParserNodeResult parser_do_reference(ParserState *parser) {
         return parser_node_err_expect(name_tok_res);
     }
 
-    ER_Token  name_tok = ER_RESULT_GET(name_tok_res);
-    ER_String ref_name = name_tok.tok_value;
+    ER_Token name_tok = ER_RESULT_GET(name_tok_res);
 
     ER_ASTReferenceNode *reference = calloc(1, sizeof(*reference));
     reference->ref_node.an_type    = ER_AST_NODE_TYPE_REFERENCE;
-    reference->ref_entname         = ref_name;
+    reference->ref_entname         = name_tok;
 
     // (
     ParserExpectResult lpar_res = parser_expect(parser, ER_TOKEN_TYPE_LPAREN);
@@ -245,8 +266,7 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
         return parser_node_err_expect(name_tok_res);
     }
 
-    ER_Token  name_tok = ER_RESULT_GET(name_tok_res);
-    ER_String rel_name = name_tok.tok_value;
+    ER_Token name_tok = ER_RESULT_GET(name_tok_res);
 
     ParserExpectResult lblock_res = parser_expect(parser, ER_TOKEN_TYPE_LBLOCK);
     if (!ER_RESULT_OK(lblock_res)) {
@@ -255,7 +275,7 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
 
     ER_ASTRelationNode *relation = calloc(1, sizeof(*relation));
     relation->rel_node.an_type   = ER_AST_NODE_TYPE_RELATION;
-    relation->rel_name           = rel_name;
+    relation->rel_name           = name_tok;
     TAILQ_INIT(&relation->rel_entities);
     TAILQ_INIT(&relation->rel_attributes);
 
@@ -300,20 +320,15 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
     return parser_node_ok((ER_ASTNode *)relation);
 }
 
-ER_ParserResult ER_parser_run(ER_TokenList tokens) {
+ER_ParserResult ER_parser_run(ER_TokenList tokens, ER_String input) {
     ParserState parser = {0};
     parser.par_tokens  = tokens;
+    parser.par_input   = input;
 
     ER_ASTRootNode root;
     root.rt_node.an_type = ER_AST_NODE_TYPE_ROOT;
     TAILQ_INIT(&root.rt_entities);
     TAILQ_INIT(&root.rt_relations);
-
-    ER_ParserResult err = (ER_ParserResult){
-        .res_status = ER_STATUS_ERR,
-        .res_err    = "syntax tree generation failed"};
-
-    // TODO: cuople every return err with a real error print
 
     ParserExpectResult keyword_res;
     while ((keyword_res = parser_expect(&parser,
@@ -326,21 +341,21 @@ ER_ParserResult ER_parser_run(ER_TokenList tokens) {
         if (ER_TOKEN_TYPE_ENTITY == tok.tok_type) {
             ParserNodeResult entity_res = parser_do_entity(&parser);
             if (!ER_RESULT_OK(entity_res)) {
-                return err;
+                return parser_panic(&parser);
             }
             ER_ASTNode *entity = ER_RESULT_GET(entity_res);
             TAILQ_INSERT_TAIL(&root.rt_entities, entity, an_link);
         } else if (ER_TOKEN_TYPE_TOTAL == tok.tok_type) {
             ParserNodeResult entity_res = parser_do_total(&parser);
             if (!ER_RESULT_OK(entity_res)) {
-                return err;
+                return parser_panic(&parser);
             }
             ER_ASTNode *entity = ER_RESULT_GET(entity_res);
             TAILQ_INSERT_TAIL(&root.rt_entities, entity, an_link);
         } else {
             ParserNodeResult entity_res = parser_do_relation(&parser);
             if (!ER_RESULT_OK(entity_res)) {
-                return err;
+                return parser_panic(&parser);
             }
             ER_ASTNode *relation = ER_RESULT_GET(entity_res);
             TAILQ_INSERT_TAIL(&root.rt_relations, relation, an_link);
@@ -348,7 +363,7 @@ ER_ParserResult ER_parser_run(ER_TokenList tokens) {
     }
 
     if (!parser_matches_types(&parser, ER_TOKEN_TYPE_EOF)) {
-        return err;
+        return parser_panic(&parser);
     }
 
     return (ER_ParserResult){.res_status = ER_STATUS_OK, .res_val = root};

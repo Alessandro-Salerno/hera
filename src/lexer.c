@@ -336,6 +336,7 @@ ER_LexerResult ER_lexer_run(ER_String input) {
     LexerState        lexer   = {0};
     lexer.ls_input            = input;
     lexer_reset_row(&lexer);
+    lexer.ls_rowstart = 0;
 
     ER_TokenList tokens            = EZLD_ARRAY_NEW();
     ER_Token     curr_token        = {0};
@@ -364,6 +365,7 @@ ER_LexerResult ER_lexer_run(ER_String input) {
             curr_token.tok_row           = curr_row;
             curr_token.tok_col           = curr_col;
             curr_token.tok_rowoff        = lexer.ls_bincol;
+            curr_token.tok_rowstart      = lexer.ls_rowstart;
             curr_token.tok_type          = ER_TOKEN_TYPE_NONE;
             curr_token_action            = LEXER_ACTION_IGNORE;
         }

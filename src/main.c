@@ -69,7 +69,7 @@ int main(int argc, const char *const argv[]) {
                token->tok_type);
     }*/
 
-    ER_ParserResult par_res  = ER_parser_run(tokens);
+    ER_ParserResult par_res  = ER_parser_run(tokens, s);
     ER_ASTRootNode *ast_root = ER_RESULT_UNWRAP(par_res);
 
     ER_GraphResult graph_res = ER_graph_compute(ast_root);

@@ -77,7 +77,8 @@ static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_String name) {
 
 static GraphEntityResult graph_add_entity(ER_Graph         *graph,
                                           ER_ASTEntityNode *entity) {
-    GraphEntityResult get_res = graph_get_entity(graph, entity->ent_name);
+    GraphEntityResult get_res = graph_get_entity(graph,
+                                                 entity->ent_name.tok_value);
     if (ER_RESULT_OK(get_res)) {
         return (GraphEntityResult){.res_status = ER_STATUS_ERR,
                                    .res_err    = "entity redefined"};
@@ -89,7 +90,7 @@ static GraphEntityResult graph_add_entity(ER_Graph         *graph,
 
     HASH_ADD(gen_hh,
              graph->gr_entities,
-             gen_astnode->ent_name,
+             gen_astnode->ent_name.tok_value,
              sizeof(ER_String),
              graph_entity);
     return (GraphEntityResult){.res_status = ER_STATUS_OK,
@@ -98,7 +99,9 @@ static GraphEntityResult graph_add_entity(ER_Graph         *graph,
 
 static GraphRelationResult graph_add_relation(ER_Graph           *graph,
                                               ER_ASTRelationNode *relation) {
-    GraphRelationResult get_res = graph_get_relation(graph, relation->rel_name);
+    GraphRelationResult get_res = graph_get_relation(
+        graph,
+        relation->rel_name.tok_value);
     if (ER_RESULT_OK(get_res)) {
         return (GraphRelationResult){.res_status = ER_STATUS_ERR,
                                      .res_err    = "relation redefined"};
@@ -111,7 +114,7 @@ static GraphRelationResult graph_add_relation(ER_Graph           *graph,
 
     HASH_ADD(gre_hh,
              graph->gr_relations,
-             gre_astnode->rel_name,
+             gre_astnode->rel_name.tok_value,
              sizeof(ER_String),
              graph_relation);
     return (GraphRelationResult){.res_status = ER_STATUS_OK,
@@ -164,7 +167,7 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
 
         GraphEntityResult get_res = graph_get_entity(
             &graph,
-            graph_ent->gen_astnode->ent_specifies);
+            graph_ent->gen_astnode->ent_specifies.tok_value);
         if (!ER_RESULT_OK(get_res)) {
             return graph_err(ER_RESULT_ERROR(get_res));
         }
@@ -185,8 +188,9 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
             ER_GraphEdge        *edge = calloc(1, sizeof(*edge));
             assert(NULL != edge);
 
-            GraphEntityResult get_res = graph_get_entity(&graph,
-                                                         ref->ref_entname);
+            GraphEntityResult get_res = graph_get_entity(
+                &graph,
+                ref->ref_entname.tok_value);
             if (!ER_RESULT_OK(get_res)) {
                 return graph_err(ER_RESULT_ERROR(get_res));
             }
@@ -235,14 +239,15 @@ void ER_graph_place(ER_Graph *graph) {
     ER_GraphEntity *ent, *tmp_ent;
     HASH_ITER(gen_hh, graph->gr_entities, ent, tmp_ent) {
         ent->gen_layer = graph_calculate_entity_layer(ent);
-        ent->gen_w     = (ent->gen_astnode->ent_name.str_len * 12) +
+        ent->gen_w     = (ent->gen_astnode->ent_name.tok_value.str_len * 12) +
                      ER_SVG_ENTITY_W_PAD;
         ent->gen_h = ER_SVG_ENTITY_H_MIN;
 
         ER_ASTNode *attr;
         TAILQ_FOREACH(attr, &ent->gen_astnode->ent_attributes, an_link) {
             ER_ASTAttributeNode *atrn = (void *)attr;
-            ER_i32 attr_w = (atrn->atr_name.str_len * 10) + ER_SVG_ENTITY_W_PAD;
+            ER_i32 attr_w = (atrn->atr_name.tok_value.str_len * 10) +
+                            ER_SVG_ENTITY_W_PAD;
             ent->gen_h += ER_SVG_ATTR_H_STEP;
             if (attr_w > ent->gen_w) {
                 ent->gen_w = attr_w;
@@ -292,14 +297,14 @@ void ER_graph_place(ER_Graph *graph) {
     // Phase 3: Relations (Center Column)
     ER_i32 rel_x = 650, rel_y_curr = 100;
     HASH_ITER(gre_hh, graph->gr_relations, rel, tmp_rel) {
-        rel->gre_w = (rel->gre_astnode->rel_name.str_len * 12) +
+        rel->gre_w = (rel->gre_astnode->rel_name.tok_value.str_len * 12) +
                      ER_SVG_RELATION_W_PAD;
         rel->gre_h = ER_SVG_RELATION_H_MIN;
 
         ER_ASTNode *attr;
         TAILQ_FOREACH(attr, &rel->gre_astnode->rel_attributes, an_link) {
-            ER_ASTAttributeNode *atrn   = (void *)attr;
-            ER_i32               attr_w = (atrn->atr_name.str_len * 10) +
+            ER_ASTAttributeNode *atrn = (void *)attr;
+            ER_i32 attr_w = (atrn->atr_name.tok_value.str_len * 10) +
                             ER_SVG_RELATION_W_PAD;
             rel->gre_h += ER_SVG_ATTR_H_STEP;
             if (attr_w > rel->gre_w) {
