@@ -29,13 +29,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-void *ER_result_unwrap_impl(void *val, ER_Status status, const char *message) {
+void *ER_result_unwrap_impl(ER_Status              status,
+                            void                  *val,
+                            const char            *message,
+                            ER_ResultPanicHandler *panic_handler,
+                            void                  *panic_arg) {
     if (ER_STATUS_OK == status) {
         return val;
     }
 
-    fprintf(stderr, "unwrap error: %s", message);
-    puts(""); // empty line
+    if (ER_STATUS_ERR == status) {
+        fprintf(stderr, "unwrap error: %s", message);
+    } else if (ER_STATUS_PANIC == status) {
+        panic_handler(panic_arg);
+    }
 
+    fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
 }

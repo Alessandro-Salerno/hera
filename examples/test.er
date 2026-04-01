@@ -19,7 +19,7 @@
 // recapiti telefonici. I docenti possono essere dipendenti interni della
 // società o collaboratori esterni.
 
-total entity Studente {
+total entity Studente \ {
     attribute "Codice fiscalè" key;
     attribute "Cognome";
     attribute "Genere";

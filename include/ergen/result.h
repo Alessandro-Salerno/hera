@@ -27,19 +27,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#define ER_RESULT(type)          \
-    struct {                     \
-        ER_Status res_status;    \
-        union {                  \
-            type        res_val; \
-            const char *res_err; \
-        };                       \
+#define ER_RESULT(type)                          \
+    struct {                                     \
+        ER_Status res_status;                    \
+        union {                                  \
+            type        res_val;                 \
+            const char *res_err;                 \
+            void       *res_panicarg;            \
+        };                                       \
+        ER_ResultPanicHandler *res_panichandler; \
     }
 
-#define ER_RESULT_UNWRAP(result)               \
-    ER_result_unwrap_impl(&(result).res_val,   \
-                          (result).res_status, \
-                          (result).res_err)
+typedef void ER_ResultPanicHandler(void *arg);
+
+#define ER_RESULT_UNWRAP(result)                     \
+    ER_result_unwrap_impl((result).res_status,       \
+                          &(result).res_val,         \
+                          (result).res_err,          \
+                          (result).res_panichandler, \
+                          (result).res_panicarg)
 
 #define ER_RESULT_STATUS(result) ((result).res_status)
 #define ER_RESULT_OK(result)     (ER_STATUS_OK == ER_RESULT_STATUS(result))
@@ -48,7 +54,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef enum ER_Status {
     ER_STATUS_OK = 0,
-    ER_STATUS_ERR
+    ER_STATUS_ERR,
+    ER_STATUS_PANIC
 } ER_Status;
 
-void *ER_result_unwrap_impl(void *val, ER_Status status, const char *message);
+void *ER_result_unwrap_impl(ER_Status              status,
+                            void                  *val,
+                            const char            *message,
+                            ER_ResultPanicHandler *panic_handler,
+                            void                  *panic_arg);

@@ -55,6 +55,7 @@ typedef struct LexerState {
     ER_u64    ls_row;
     ER_u64    ls_col;
     ER_u64    ls_bincol;
+    ER_u64    ls_rowstart;
 } LexerState;
 
 // Utilities
@@ -83,8 +84,9 @@ static void lexer_step(LexerState *lexer) {
 
 static void lexer_reset_row(LexerState *lexer) {
     lexer->ls_row++;
-    lexer->ls_col    = 1;
-    lexer->ls_bincol = 0;
+    lexer->ls_col      = 1;
+    lexer->ls_bincol   = 0;
+    lexer->ls_rowstart = lexer->ls_next + 1;
 }
 
 static ER_WCharResult lexer_peek(LexerState *lexer) {
@@ -132,6 +134,27 @@ static ER_TokenType lexer_token_type(ER_String buffer, ER_TokenType hint) {
 
     // at this point we assume it is an identifier
     return ER_TOKEN_TYPE_IDENTIFIER;
+}
+
+static void lexer_panic_handler(void *arg) {
+    LexerState *lexer = arg;
+    ER_generic_panic_output(lexer->ls_input,
+                            lexer->ls_row,
+                            lexer->ls_col,
+                            lexer->ls_rowstart,
+                            lexer->ls_col - 1,
+                            1,
+                            "unexpected character");
+}
+
+static ER_LexerResult lexer_panic(LexerState *lexer) {
+    LexerState *snapshot = calloc(1, sizeof(*snapshot));
+    assert(NULL != snapshot);
+    *snapshot = *lexer;
+
+    return (ER_LexerResult){.res_status       = ER_STATUS_PANIC,
+                            .res_panicarg     = snapshot,
+                            .res_panichandler = lexer_panic_handler};
 }
 
 // Handlers
@@ -312,6 +335,7 @@ ER_LexerResult ER_lexer_run(ER_String input) {
     LexerCharHandler *handler = lexer_base_handler;
     LexerState        lexer   = {0};
     lexer.ls_input            = input;
+    lexer_reset_row(&lexer);
 
     ER_TokenList tokens            = EZLD_ARRAY_NEW();
     ER_Token     curr_token        = {0};
@@ -348,10 +372,8 @@ ER_LexerResult ER_lexer_run(ER_String input) {
 
         // if the handler threw an error
         if (NULL == instruction.li_handler) {
-            // TODO: display error
             EZLD_ARRAY_FREE(tokens);
-            return (ER_LexerResult){.res_status = ER_STATUS_ERR,
-                                    .res_err    = "lexical analysis failed"};
+            return lexer_panic(&lexer);
         }
 
         // handle ER_WChar action
