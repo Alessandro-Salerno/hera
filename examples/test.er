@@ -1,35 +1,22 @@
-// Si vuole realizzare una base di dati per una società che eroga corsi,
-// di cui vogliamo rappresentare i dati dei partecipanti ai corsi e dei
-// docenti. Per gli studenti (circa 5000), identificati da un codice, si
-// vuole memorizzare il codice fiscale, il cognome, l'età, il sesso, il luogo
-// di nascita, il nome dei loro attuali datori di lavoro, i posti dove hanno
-// lavorato in precedenza insieme al periodo, l'indirizzo e il numero di
-// telefono, i corsi che hanno frequentato (i corsi sono in tutto circa
-// 200) e il giudizio finale. Rappresentiamo anche i seminari che stanno
-// attualmente frequentando e, per ogni giorno, i luoghi e le ore dove
-// sono tenute le lezioni. I corsi hanno un codice, un titolo e possono
-// avere varie edizioni con date di inizio e fine e numero di
-// partecipanti. Se gli studenti sono liberi professionisti, vogliamo
-// conoscere l'area di interesse e, se lo possiedono, il titolo. Per quelli
-// che lavorano alle dipendenze di altri, vogliamo conoscere invece il
-// loro livello e la posizione ricoperta. Per gli insegnanti (circa 300),
-// rappresentiamo il cognome, l'età, il posto dove sono nati, il nome
-// del corso che insegnano, quelli che hanno insegnato nel passato e
-// quelli che possono insegnare. Rappresentiamo anche tutti i loro
-// recapiti telefonici. I docenti possono essere dipendenti interni della
-// società o collaboratori esterni.
-
-total entity 123454 {
-    attribute "Codice fiscalè" key;
+// Studente
+total entity Studente {
+    attribute "Codice fiscale" key;
     attribute "Cognome";
     attribute "Genere";
     attribute "Luogo di nascita";
     attribute "Indirizzo";
     attribute "Numero di telefono";
+
+    relation "Rapporto di lavoro passato" (0, N);
+    relation Frequenta (0, N);
+    relation "Ha frequentato" (0, N);
 }
 
+// Specializzazioni studente
 entity "Studente dipendente" specifies Studente {
     attribute "Identificatore" key;
+
+    relation "Rapporto lavorativo attivo" (1, 1);
 }
 
 entity "Studente autonomo" specifies Studente {
@@ -38,58 +25,62 @@ entity "Studente autonomo" specifies Studente {
     attribute "Titolo di studi";
 }
 
+// Datore di lavoro
 total entity "Datore di lavoro" {
     attribute "Nome" key;
     attribute "Indirizzo sede";
+
+    relation "Rapporto lavorativo attivo" (0, N);
+    relation "Rapporto di lavoro passato" (1, N);
 }
 
+// Relazioni lavoro
 relation "Rapporto lavorativo attivo" {
-    entity "Studente dipendente" (1, 1);
-    entity "Datore di lavoro" (0, N);
 }
 
 relation "Rapporto di lavoro passato" {
-    entity Studente (0, N);
-    entity "Datore di lavoro" (1, N);
-
     attribute "Data inizio";
     attribute "Data fine";
-
     attribute "Livello";
     attribute "Posizione ricoperta";
 }
 
+// Corso
 entity Corso {
     attribute "Titolo" key;
     attribute "Edizione" key;
     attribute "Data inizio";
     attribute "Data fine";
     attribute "Numero di partecipanti";
+
+    relation Appartiene (0, N);
+    relation Frequenta (0, N);
+    relation "Ha frequentato" (0, N);
+    relation Insegna (0, N);
+    relation Abilitaone (0, N);
 }
 
+// Lezione
 entity Lezione {
     attribute "Data" key;
     attribute "Ora" key;
     attribute "Durata";
+
+    relation Appartiene (1, 1);
 }
 
+// Relazioni corsi
 relation Appartiene {
-    entity Lezione (1, 1);
-    entity Corso (0, N);
 }
 
 relation Frequenta {
-    entity Studente (0, N);
-    entity Corso (0, N);
 }
 
 relation "Ha frequentato" {
-    entity Studente (0, N);
-    entity Corso (0, N);
-
     attribute "Giudizio finale";
 }
 
+// Insegnante
 total entity Insegnante {
     attribute "Codice fiscale" key;
     attribute "Cognome";
@@ -97,8 +88,12 @@ total entity Insegnante {
     attribute "Luogo di nascita";
     attribute "Numero di telefono";
     attribute "Indirizzo mail";
+
+    relation Insegna (0, N);
+    relation Abilitaone (0, N);
 }
 
+// Specializzazioni insegnante
 entity "Insegnante interno" specifies Insegnante {
     attribute "Identificatore" key;
     attribute "Data assunzione";
@@ -111,15 +106,11 @@ entity "Insegnante collaboratore" specifies Insegnante {
     attribute "Tipo di contratto";
 }
 
+// Relazioni insegnamento
 relation Insegna {
-    entity Insegnante (0, N);
-    entity Corso (0, N);
-
     attribute "Data inizio";
     attribute "Data fine";
 }
 
 relation Abilitaone {
-    entity Insegnante (0, N);
-    entity Corso (0, N);
 }

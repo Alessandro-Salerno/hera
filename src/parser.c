@@ -129,84 +129,6 @@ ParserNodeResult parser_do_attribute(ParserState *parser) {
     return parser_node_ok((ER_ASTNode *)node);
 }
 
-ParserNodeResult parser_do_entity(ParserState *parser) {
-    ParserExpectResult name_tok_res = parser_expect(parser,
-                                                    ER_TOKEN_TYPE_IDENTIFIER |
-                                                        ER_TOKEN_TYPE_STRING);
-    if (!ER_RESULT_OK(name_tok_res)) {
-        return parser_node_err_expect(name_tok_res);
-    }
-
-    ER_Token          name_tok = ER_RESULT_GET(name_tok_res);
-    ER_ASTEntityNode *entity   = calloc(1, sizeof(*entity));
-    assert(NULL != entity);
-    entity->ent_node.an_type = ER_AST_NODE_TYPE_ENTITY;
-    entity->ent_name         = name_tok;
-    TAILQ_INIT(&entity->ent_attributes);
-
-    // handle optional [specifies <name>]
-    if (parser_matches_types(parser, ER_TOKEN_TYPE_SPECIFIES)) {
-        ParserExpectResult parent_name_res = parser_expect(
-            parser,
-            ER_TOKEN_TYPE_IDENTIFIER | ER_TOKEN_TYPE_STRING);
-        if (!ER_RESULT_OK(parent_name_res)) {
-            return parser_node_err_expect(name_tok_res);
-        }
-
-        ER_Token parent_tok   = ER_RESULT_GET(parent_name_res);
-        entity->ent_specifies = parent_tok;
-        entity->ent_flags |= ER_ENTITY_FLAGS_SPECIFIES;
-    }
-
-    ParserExpectResult lblock_res = parser_expect(parser, ER_TOKEN_TYPE_LBLOCK);
-    if (!ER_RESULT_OK(lblock_res)) {
-        return parser_node_err_expect(lblock_res);
-    }
-
-    // parse block contents (attributes)
-    // we use parser_matches_types instead of parsre_expect because an empty
-    // block is legal and there's no path in which this can return the error to
-    // the caller of parser_do_entity
-    while (parser_matches_types(parser, ER_TOKEN_TYPE_ATTRIBUTE)) {
-        ParserNodeResult attr_res = parser_do_attribute(parser);
-        if (!ER_RESULT_OK(attr_res)) {
-            return attr_res;
-        }
-
-        ParserExpectResult semic_res = parser_expect(parser,
-                                                     ER_TOKEN_TYPE_SEMICOLON);
-        if (!ER_RESULT_OK(semic_res)) {
-            return parser_node_err_expect(semic_res);
-        }
-
-        ER_ASTNode *attr_node = ER_RESULT_GET(attr_res);
-        TAILQ_INSERT_TAIL(&entity->ent_attributes, attr_node, an_link);
-    }
-
-    ParserExpectResult rblock_res = parser_expect(parser, ER_TOKEN_TYPE_RBLOCK);
-    if (!ER_RESULT_OK(rblock_res)) {
-        return parser_node_err_expect(rblock_res);
-    }
-
-    return parser_node_ok((ER_ASTNode *)entity);
-}
-
-ParserNodeResult parser_do_total(ParserState *parser) {
-    ParserExpectResult entity_res = parser_expect(parser, ER_TOKEN_TYPE_ENTITY);
-    if (!ER_RESULT_OK(entity_res)) {
-        return parser_node_err_expect(entity_res);
-    }
-
-    ParserNodeResult body_res = parser_do_entity(parser);
-    if (!ER_RESULT_OK(body_res)) {
-        return body_res;
-    }
-
-    ER_ASTEntityNode *entity = (void *)ER_RESULT_GET(body_res);
-    entity->ent_flags        = ER_ENTITY_FLAGS_TOTAL;
-    return body_res;
-}
-
 ParserNodeResult parser_do_reference(ParserState *parser) {
     ParserExpectResult name_tok_res = parser_expect(parser,
                                                     ER_TOKEN_TYPE_IDENTIFIER |
@@ -219,7 +141,7 @@ ParserNodeResult parser_do_reference(ParserState *parser) {
 
     ER_ASTReferenceNode *reference = calloc(1, sizeof(*reference));
     reference->ref_node.an_type    = ER_AST_NODE_TYPE_REFERENCE;
-    reference->ref_entname         = name_tok;
+    reference->ref_relname         = name_tok;
 
     // (
     ParserExpectResult lpar_res = parser_expect(parser, ER_TOKEN_TYPE_LPAREN);
@@ -255,7 +177,104 @@ ParserNodeResult parser_do_reference(ParserState *parser) {
 
     reference->ref_lcard = ER_RESULT_GET(lcard_res);
     reference->ref_rcard = ER_RESULT_GET(rcard_res);
+
+    // [key]
+    if (parser_matches_types(parser, ER_TOKEN_TYPE_KEY)) {
+        reference->ref_flags |= ER_REFERENCE_FLAGS_KEY;
+    }
+
     return parser_node_ok((ER_ASTNode *)reference);
+}
+
+ParserNodeResult parser_do_entity(ParserState *parser) {
+    ParserExpectResult name_tok_res = parser_expect(parser,
+                                                    ER_TOKEN_TYPE_IDENTIFIER |
+                                                        ER_TOKEN_TYPE_STRING);
+    if (!ER_RESULT_OK(name_tok_res)) {
+        return parser_node_err_expect(name_tok_res);
+    }
+
+    ER_Token          name_tok = ER_RESULT_GET(name_tok_res);
+    ER_ASTEntityNode *entity   = calloc(1, sizeof(*entity));
+    assert(NULL != entity);
+    entity->ent_node.an_type = ER_AST_NODE_TYPE_ENTITY;
+    entity->ent_name         = name_tok;
+    TAILQ_INIT(&entity->ent_relations);
+    TAILQ_INIT(&entity->ent_attributes);
+
+    // handle optional [specifies <name>]
+    if (parser_matches_types(parser, ER_TOKEN_TYPE_SPECIFIES)) {
+        ParserExpectResult parent_name_res = parser_expect(
+            parser,
+            ER_TOKEN_TYPE_IDENTIFIER | ER_TOKEN_TYPE_STRING);
+        if (!ER_RESULT_OK(parent_name_res)) {
+            return parser_node_err_expect(name_tok_res);
+        }
+
+        ER_Token parent_tok   = ER_RESULT_GET(parent_name_res);
+        entity->ent_specifies = parent_tok;
+        entity->ent_flags |= ER_ENTITY_FLAGS_SPECIFIES;
+    }
+
+    ParserExpectResult lblock_res = parser_expect(parser, ER_TOKEN_TYPE_LBLOCK);
+    if (!ER_RESULT_OK(lblock_res)) {
+        return parser_node_err_expect(lblock_res);
+    }
+
+    // parse block contents (attributes and relation references)
+    ParserExpectResult memb_result;
+    while ((memb_result = parser_expect(parser,
+                                        ER_TOKEN_TYPE_ATTRIBUTE |
+                                            ER_TOKEN_TYPE_RELATION)),
+           ER_RESULT_OK(memb_result)) {
+        ER_Token memb = ER_RESULT_GET(memb_result);
+
+        if (ER_TOKEN_TYPE_ATTRIBUTE == memb.tok_type) {
+            ParserNodeResult attr_res = parser_do_attribute(parser);
+            if (!ER_RESULT_OK(attr_res)) {
+                return attr_res;
+            }
+            ER_ASTNode *attr_node = ER_RESULT_GET(attr_res);
+            TAILQ_INSERT_TAIL(&entity->ent_attributes, attr_node, an_link);
+        } else if (ER_TOKEN_TYPE_RELATION == memb.tok_type) {
+            ParserNodeResult ref_res = parser_do_reference(parser);
+            if (!ER_RESULT_OK(ref_res)) {
+                return ref_res;
+            }
+            ER_ASTNode *attr_node = ER_RESULT_GET(ref_res);
+            TAILQ_INSERT_TAIL(&entity->ent_relations, attr_node, an_link);
+        }
+
+        // ;
+        ParserExpectResult semic_res = parser_expect(parser,
+                                                     ER_TOKEN_TYPE_SEMICOLON);
+        if (!ER_RESULT_OK(semic_res)) {
+            return parser_node_err_expect(semic_res);
+        }
+    }
+
+    ParserExpectResult rblock_res = parser_expect(parser, ER_TOKEN_TYPE_RBLOCK);
+    if (!ER_RESULT_OK(rblock_res)) {
+        return parser_node_err_expect(rblock_res);
+    }
+
+    return parser_node_ok((ER_ASTNode *)entity);
+}
+
+ParserNodeResult parser_do_total(ParserState *parser) {
+    ParserExpectResult entity_res = parser_expect(parser, ER_TOKEN_TYPE_ENTITY);
+    if (!ER_RESULT_OK(entity_res)) {
+        return parser_node_err_expect(entity_res);
+    }
+
+    ParserNodeResult body_res = parser_do_entity(parser);
+    if (!ER_RESULT_OK(body_res)) {
+        return body_res;
+    }
+
+    ER_ASTEntityNode *entity = (void *)ER_RESULT_GET(body_res);
+    entity->ent_flags        = ER_ENTITY_FLAGS_TOTAL;
+    return body_res;
 }
 
 ParserNodeResult parser_do_relation(ParserState *parser) {
@@ -276,35 +295,21 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
     ER_ASTRelationNode *relation = calloc(1, sizeof(*relation));
     relation->rel_node.an_type   = ER_AST_NODE_TYPE_RELATION;
     relation->rel_name           = name_tok;
-    TAILQ_INIT(&relation->rel_entities);
     TAILQ_INIT(&relation->rel_attributes);
 
-    // references and attributes can be interleaved...
-    ParserExpectResult memb_result;
-    while ((memb_result = parser_expect(parser,
-                                        ER_TOKEN_TYPE_ENTITY |
-                                            ER_TOKEN_TYPE_ATTRIBUTE)),
-           ER_RESULT_OK(memb_result)) {
-        ER_Token memb = ER_RESULT_GET(memb_result);
-
-        if (ER_TOKEN_TYPE_ENTITY == memb.tok_type) {
-            ParserNodeResult ref_res = parser_do_reference(parser);
-            if (!ER_RESULT_OK(ref_res)) {
-                return ref_res;
-            }
-
-            ER_ASTNode *ref = ER_RESULT_GET(ref_res);
-            TAILQ_INSERT_TAIL(&relation->rel_entities, ref, an_link);
-        } else {
-            ParserNodeResult attr_res = parser_do_attribute(parser);
-            if (!ER_RESULT_OK(attr_res)) {
-                return attr_res;
-            }
-
-            ER_ASTNode *attr = ER_RESULT_GET(attr_res);
-            TAILQ_INSERT_TAIL(&relation->rel_attributes, attr, an_link);
+    // we use parser_matches_types instead of parsre_expect because an empty
+    // block is legal and there's no path in which this can return the error to
+    // the caller of parser_do_relation
+    while ((parser_matches_types(parser, ER_TOKEN_TYPE_ATTRIBUTE))) {
+        ParserNodeResult attr_res = parser_do_attribute(parser);
+        if (!ER_RESULT_OK(attr_res)) {
+            return attr_res;
         }
 
+        ER_ASTNode *attr = ER_RESULT_GET(attr_res);
+        TAILQ_INSERT_TAIL(&relation->rel_attributes, attr, an_link);
+
+        // ;
         ParserExpectResult semic_res = parser_expect(parser,
                                                      ER_TOKEN_TYPE_SEMICOLON);
         if (!ER_RESULT_OK(semic_res)) {

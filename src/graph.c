@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <ergen/graph.h>
 #include <ergen/svg.h>
+#include <ergen/util.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -87,6 +88,7 @@ static GraphEntityResult graph_add_entity(ER_Graph         *graph,
     ER_GraphEntity *graph_entity = calloc(1, sizeof(*graph_entity));
     assert(NULL != graph_entity);
     graph_entity->gen_astnode = entity;
+    TAILQ_INIT(&graph_entity->gen_specifiers);
 
     HASH_ADD(gen_hh,
              graph->gr_entities,
@@ -130,7 +132,7 @@ static inline ER_GraphResult graph_ok(ER_Graph graph) {
 }
 
 ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
-    // NOTE: zeroeing this structure causes pointer fields to become NULL, which
+    // NOTE: zeroing this structure causes pointer fields to become NULL, which
     // constitutes implicit initialization as per uthash documentation
     ER_Graph graph = {0};
 
@@ -161,6 +163,31 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
     // link entities to their parent
     ER_GraphEntity *graph_ent, *graph_ent_tmp;
     HASH_ITER(gen_hh, graph.gr_entities, graph_ent, graph_ent_tmp) {
+        // relation handling
+        ER_ASTNode *ref_astnode;
+        TAILQ_FOREACH(ref_astnode,
+                      &graph_ent->gen_astnode->ent_relations,
+                      an_link) {
+            assert(ER_AST_NODE_TYPE_REFERENCE == ref_astnode->an_type);
+            ER_ASTReferenceNode *ref  = (void *)ref_astnode;
+            ER_GraphEdge        *edge = calloc(1, sizeof(*edge));
+            assert(NULL != edge);
+
+            GraphRelationResult get_res = graph_get_relation(
+                &graph,
+                ref->ref_relname.tok_value);
+            if (!ER_RESULT_OK(get_res)) {
+                return graph_err(ER_RESULT_ERROR(get_res));
+            }
+
+            ER_GraphRelation *ref_relation = ER_RESULT_GET(get_res);
+            edge->ged_astnode              = ref;
+            edge->ged_entity               = graph_ent;
+            edge->ged_relation             = ref_relation;
+            TAILQ_INSERT_TAIL(&ref_relation->gre_edges, edge, ged_link);
+        }
+
+        // generalization hierarchies handling
         if (!(graph_ent->gen_astnode->ent_flags & ER_ENTITY_FLAGS_SPECIFIES)) {
             continue;
         }
@@ -174,33 +201,8 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
 
         ER_GraphEntity *specifies = ER_RESULT_GET(get_res);
         graph_ent->gen_specifies  = specifies;
-    }
-
-    // link relations with entities
-    ER_GraphRelation *graph_rel, *graph_rel_tmp;
-    HASH_ITER(gre_hh, graph.gr_relations, graph_rel, graph_rel_tmp) {
-        ER_ASTNode *ref_astnode;
-        TAILQ_FOREACH(ref_astnode,
-                      &graph_rel->gre_astnode->rel_entities,
-                      an_link) {
-            assert(ER_AST_NODE_TYPE_REFERENCE == ref_astnode->an_type);
-            ER_ASTReferenceNode *ref  = (void *)ref_astnode;
-            ER_GraphEdge        *edge = calloc(1, sizeof(*edge));
-            assert(NULL != edge);
-
-            GraphEntityResult get_res = graph_get_entity(
-                &graph,
-                ref->ref_entname.tok_value);
-            if (!ER_RESULT_OK(get_res)) {
-                return graph_err(ER_RESULT_ERROR(get_res));
-            }
-
-            ER_GraphEntity *ref_entity = ER_RESULT_GET(get_res);
-            edge->ged_astnode          = ref;
-            edge->ged_entity           = ref_entity;
-            edge->ged_relation         = graph_rel;
-            TAILQ_INSERT_TAIL(&graph_rel->gre_edges, edge, ged_link);
-        }
+        graph_ent->gen_numspecifiers++;
+        TAILQ_INSERT_TAIL(&specifies->gen_specifiers, graph_ent, gen_link);
     }
 
     return graph_ok(graph);
@@ -218,15 +220,10 @@ static ER_i32 graph_calculate_entity_layer(ER_GraphEntity *ent) {
 static ER_i32 graph_get_tree_height(ER_Graph *graph, ER_GraphEntity *ent) {
     ER_i32 max_child_h = 0;
 
-    // TODO: optimize this and by adding a tailq of specifiers to each entity
-    ER_GraphEntity *curr, *tmp;
-    HASH_ITER(gen_hh, graph->gr_entities, curr, tmp) {
-        if (curr->gen_specifies == ent) {
-            ER_i32 ch = graph_get_tree_height(graph, curr);
-            if (ch > max_child_h) {
-                max_child_h = ch;
-            }
-        }
+    ER_GraphEntity *child;
+    TAILQ_FOREACH(child, &ent->gen_specifiers, gen_link) {
+        ER_i32 child_h = graph_get_tree_height(graph, child);
+        max_child_h    = ER_MAX(max_child_h, child_h);
     }
 
     return ent->gen_h + (max_child_h > 0 ? 100 + max_child_h : 0);

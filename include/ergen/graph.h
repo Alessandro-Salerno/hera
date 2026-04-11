@@ -38,8 +38,11 @@ typedef struct ER_GraphEntity   ER_GraphEntity;
 typedef struct ER_GraphRelation ER_GraphRelation;
 
 struct ER_GraphEntity {
+    TAILQ_ENTRY(ER_GraphEntity) gen_link;
+    TAILQ_HEAD(, ER_GraphEntity) gen_specifiers;
     ER_ASTEntityNode *gen_astnode;
     ER_GraphEntity   *gen_specifies;
+    ER_u64            gen_numspecifiers;
     ER_i32            gen_x;
     ER_i32            gen_y;
     ER_i32            gen_w;

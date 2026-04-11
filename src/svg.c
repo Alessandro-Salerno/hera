@@ -178,14 +178,8 @@ static void svg_emit_edge(ER_GraphEdge *edge) {
 static void svg_emit_generalizations(ER_Graph *graph) {
     ER_GraphEntity *parent, *tmp_parent;
     HASH_ITER(gen_hh, graph->gr_entities, parent, tmp_parent) {
-        ER_GraphEntity *child, *tmp_child;
-        ER_i32          child_count = 0;
-        // TODO: same optimization as in graph.c
-        HASH_ITER(gen_hh, graph->gr_entities, child, tmp_child) {
-            if (child->gen_specifies == parent) {
-                child_count++;
-            }
-        }
+        ER_GraphEntity *child;
+        ER_u64          child_count = parent->gen_numspecifiers;
 
         if (0 == child_count) {
             continue;
@@ -209,11 +203,7 @@ static void svg_emit_generalizations(ER_Graph *graph) {
 
         ER_i32 min_x = px;
         ER_i32 max_x = px;
-        HASH_ITER(gen_hh, graph->gr_entities, child, tmp_child) {
-            if (child->gen_specifies != parent) {
-                continue;
-            }
-
+        TAILQ_FOREACH(child, &parent->gen_specifiers, gen_link) {
             ER_i32 cx = child->gen_x + child->gen_w / 2;
             ER_i32 cy = child->gen_y;
             min_x     = ER_MIN(min_x, cx);
