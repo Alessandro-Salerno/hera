@@ -74,14 +74,6 @@ static ParserNodeResult parser_node_ok(ER_ASTNode *node) {
     return (ParserNodeResult){.res_status = ER_STATUS_OK, .res_val = node};
 }
 
-static ParserNodeResult parser_node_err(const char *message) {
-    return (ParserNodeResult){.res_status = ER_STATUS_ERR, .res_err = message};
-}
-
-static ParserNodeResult parser_node_err_expect(ParserExpectResult err) {
-    return parser_node_err(err.res_err);
-}
-
 static void parser_panic_handler(void *arg) {
     ParserState *parser = arg;
     ER_Token     tok    = parser_peek(parser);
@@ -113,7 +105,7 @@ ParserNodeResult parser_do_attribute(ParserState *parser) {
                                                     ER_TOKEN_TYPE_IDENTIFIER |
                                                         ER_TOKEN_TYPE_STRING);
     if (!ER_RESULT_OK(name_tok_res)) {
-        return parser_node_err_expect(name_tok_res);
+        return ER_RESULT_CAST(ParserNodeResult, name_tok_res);
     }
 
     ER_Token             name_tok = ER_RESULT_GET(name_tok_res);
@@ -134,7 +126,7 @@ ParserNodeResult parser_do_reference(ParserState *parser) {
                                                     ER_TOKEN_TYPE_IDENTIFIER |
                                                         ER_TOKEN_TYPE_STRING);
     if (!ER_RESULT_OK(name_tok_res)) {
-        return parser_node_err_expect(name_tok_res);
+        return ER_RESULT_CAST(ParserNodeResult, name_tok_res);
     }
 
     ER_Token name_tok = ER_RESULT_GET(name_tok_res);
@@ -146,7 +138,7 @@ ParserNodeResult parser_do_reference(ParserState *parser) {
     // (
     ParserExpectResult lpar_res = parser_expect(parser, ER_TOKEN_TYPE_LPAREN);
     if (!ER_RESULT_OK(lpar_res)) {
-        return parser_node_err_expect(lpar_res);
+        return ER_RESULT_CAST(ParserNodeResult, lpar_res);
     }
 
     // <lcard>, <rcard>
@@ -154,25 +146,25 @@ ParserNodeResult parser_do_reference(ParserState *parser) {
         parser,
         ER_TOKEN_TYPE_NUMBER | ER_TOKEN_TYPE_IDENTIFIER | ER_TOKEN_TYPE_STRING);
     if (!ER_RESULT_OK(lcard_res)) {
-        return parser_node_err_expect(lcard_res);
+        return ER_RESULT_CAST(ParserNodeResult, lcard_res);
     }
 
     ParserExpectResult comma_res = parser_expect(parser, ER_TOKEN_TYPE_COMMA);
     if (!ER_RESULT_OK(comma_res)) {
-        return parser_node_err_expect(comma_res);
+        return ER_RESULT_CAST(ParserNodeResult, comma_res);
     }
 
     ParserExpectResult rcard_res = parser_expect(
         parser,
         ER_TOKEN_TYPE_NUMBER | ER_TOKEN_TYPE_IDENTIFIER | ER_TOKEN_TYPE_STRING);
     if (!ER_RESULT_OK(rcard_res)) {
-        return parser_node_err_expect(rcard_res);
+        return ER_RESULT_CAST(ParserNodeResult, rcard_res);
     }
 
     // )
     ParserExpectResult rpar_res = parser_expect(parser, ER_TOKEN_TYPE_RPAREN);
     if (!ER_RESULT_OK(rpar_res)) {
-        return parser_node_err_expect(rpar_res);
+        return ER_RESULT_CAST(ParserNodeResult, rcard_res);
     }
 
     reference->ref_lcard = ER_RESULT_GET(lcard_res);
@@ -191,7 +183,7 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
                                                     ER_TOKEN_TYPE_IDENTIFIER |
                                                         ER_TOKEN_TYPE_STRING);
     if (!ER_RESULT_OK(name_tok_res)) {
-        return parser_node_err_expect(name_tok_res);
+        return ER_RESULT_CAST(ParserNodeResult, name_tok_res);
     }
 
     ER_Token          name_tok = ER_RESULT_GET(name_tok_res);
@@ -208,7 +200,7 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
             parser,
             ER_TOKEN_TYPE_IDENTIFIER | ER_TOKEN_TYPE_STRING);
         if (!ER_RESULT_OK(parent_name_res)) {
-            return parser_node_err_expect(name_tok_res);
+            return ER_RESULT_CAST(ParserNodeResult, parent_name_res);
         }
 
         ER_Token parent_tok   = ER_RESULT_GET(parent_name_res);
@@ -218,7 +210,7 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
 
     ParserExpectResult lblock_res = parser_expect(parser, ER_TOKEN_TYPE_LBLOCK);
     if (!ER_RESULT_OK(lblock_res)) {
-        return parser_node_err_expect(lblock_res);
+        return ER_RESULT_CAST(ParserNodeResult, lblock_res);
     }
 
     // parse block contents (attributes and relation references)
@@ -249,13 +241,13 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
         ParserExpectResult semic_res = parser_expect(parser,
                                                      ER_TOKEN_TYPE_SEMICOLON);
         if (!ER_RESULT_OK(semic_res)) {
-            return parser_node_err_expect(semic_res);
+            return ER_RESULT_CAST(ParserNodeResult, semic_res);
         }
     }
 
     ParserExpectResult rblock_res = parser_expect(parser, ER_TOKEN_TYPE_RBLOCK);
     if (!ER_RESULT_OK(rblock_res)) {
-        return parser_node_err_expect(rblock_res);
+        return ER_RESULT_CAST(ParserNodeResult, rblock_res);
     }
 
     return parser_node_ok((ER_ASTNode *)entity);
@@ -264,7 +256,7 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
 ParserNodeResult parser_do_total(ParserState *parser) {
     ParserExpectResult entity_res = parser_expect(parser, ER_TOKEN_TYPE_ENTITY);
     if (!ER_RESULT_OK(entity_res)) {
-        return parser_node_err_expect(entity_res);
+        return ER_RESULT_CAST(ParserNodeResult, entity_res);
     }
 
     ParserNodeResult body_res = parser_do_entity(parser);
@@ -282,14 +274,14 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
                                                     ER_TOKEN_TYPE_IDENTIFIER |
                                                         ER_TOKEN_TYPE_STRING);
     if (!ER_RESULT_OK(name_tok_res)) {
-        return parser_node_err_expect(name_tok_res);
+        return ER_RESULT_CAST(ParserNodeResult, name_tok_res);
     }
 
     ER_Token name_tok = ER_RESULT_GET(name_tok_res);
 
     ParserExpectResult lblock_res = parser_expect(parser, ER_TOKEN_TYPE_LBLOCK);
     if (!ER_RESULT_OK(lblock_res)) {
-        return parser_node_err_expect(lblock_res);
+        return ER_RESULT_CAST(ParserNodeResult, lblock_res);
     }
 
     ER_ASTRelationNode *relation = calloc(1, sizeof(*relation));
@@ -313,13 +305,13 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
         ParserExpectResult semic_res = parser_expect(parser,
                                                      ER_TOKEN_TYPE_SEMICOLON);
         if (!ER_RESULT_OK(semic_res)) {
-            return parser_node_err_expect(semic_res);
+            return ER_RESULT_CAST(ParserNodeResult, semic_res);
         }
     }
 
     ParserExpectResult rblock_res = parser_expect(parser, ER_TOKEN_TYPE_RBLOCK);
     if (!ER_RESULT_OK(rblock_res)) {
-        return parser_node_err_expect(rblock_res);
+        return ER_RESULT_CAST(ParserNodeResult, rblock_res);
     }
 
     return parser_node_ok((ER_ASTNode *)relation);
