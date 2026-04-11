@@ -52,6 +52,20 @@ typedef void ER_ResultPanicHandler(void *arg);
 #define ER_RESULT_GET(result)    ((result).res_val)
 #define ER_RESULT_ERROR(result)  ((result).res_err)
 
+#define ER_RESULT_INTERNAL_HELP1(x) #x
+#define ER_RESULT_INTERNAL_HELP(x)  ER_RESULT_INTERNAL_HELP1(x)
+
+#define ER_RESULT_CAST(t, r)                                        \
+    (ER_STATUS_ERR == (r).res_status                                \
+         ? (t){.res_status = ER_STATUS_ERR, .res_err = (r).res_err} \
+     : ER_STATUS_PANIC == (r).res_status                            \
+         ? (t){.res_status       = ER_STATUS_PANIC,                 \
+               .res_panicarg     = (r).res_panicarg,                \
+               .res_panichandler = (r).res_panichandler}            \
+         : (t){.res_status = ER_STATUS_ERR,                         \
+               .res_err    = "invalid result cast at " __FILE__     \
+                          ":" ER_RESULT_INTERNAL_HELP(__LINE__)})
+
 typedef enum ER_Status {
     ER_STATUS_OK = 0,
     ER_STATUS_ERR,

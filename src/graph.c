@@ -51,38 +51,78 @@ static inline void graph_hash_string(ER_String *s, unsigned int *hashv) {
 #undef HASH_KEYCMP
 #define HASH_KEYCMP(a, b, n) !ER_STRING_EQ(*(ER_String *)a, *(ER_String *)b)
 
-static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_String name) {
+static void graph_unknown_panic_handler(void *arg) {
+    ER_Token *tok   = arg;
+    ER_String input = ER_STRING_SUP(tok->tok_value, tok->tok_off);
+
+    ER_generic_panic_output(input,
+                            tok->tok_row,
+                            tok->tok_col,
+                            tok->tok_rowstart,
+                            tok->tok_col - 1,
+                            tok->tok_value.str_len,
+                            "unknown name '%.*s'",
+                            ER_STRING_PRINTF(tok->tok_value));
+}
+
+static void graph_redefined_panic_handler(void *arg) {
+    ER_Token *tok   = arg;
+    ER_String input = ER_STRING_SUP(tok->tok_value, tok->tok_off);
+
+    ER_generic_panic_output(input,
+                            tok->tok_row,
+                            tok->tok_col,
+                            tok->tok_rowstart,
+                            tok->tok_col - 1,
+                            tok->tok_value.str_len,
+                            "multiple definitions of '%.*s'",
+                            ER_STRING_PRINTF(tok->tok_value));
+}
+
+static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_Token *name) {
     ER_GraphEntity *ent = NULL;
-    HASH_FIND(gen_hh, graph->gr_entities, &name, sizeof(name), ent);
+    HASH_FIND(gen_hh,
+              graph->gr_entities,
+              &name->tok_value,
+              sizeof(name->tok_value),
+              ent);
 
     if (NULL != ent) {
         return (GraphEntityResult){.res_status = ER_STATUS_OK, .res_val = ent};
     }
 
-    return (GraphEntityResult){.res_status = ER_STATUS_ERR,
-                               .res_err    = "unknown entity"};
+    return (GraphEntityResult){.res_status       = ER_STATUS_PANIC,
+                               .res_panicarg     = name,
+                               .res_panichandler = graph_unknown_panic_handler};
 }
 
-static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_String name) {
+static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_Token *name) {
     ER_GraphRelation *rel = NULL;
-    HASH_FIND(gre_hh, graph->gr_relations, &name, sizeof(name), rel);
+    HASH_FIND(gre_hh,
+              graph->gr_relations,
+              &name->tok_value,
+              sizeof(name->tok_value),
+              rel);
 
     if (NULL != rel) {
         return (GraphRelationResult){.res_status = ER_STATUS_OK,
                                      .res_val    = rel};
     }
 
-    return (GraphRelationResult){.res_status = ER_STATUS_ERR,
-                                 .res_err    = "unknown relation"};
+    return (GraphRelationResult){
+        .res_status       = ER_STATUS_PANIC,
+        .res_panicarg     = name,
+        .res_panichandler = graph_unknown_panic_handler};
 }
 
 static GraphEntityResult graph_add_entity(ER_Graph         *graph,
                                           ER_ASTEntityNode *entity) {
-    GraphEntityResult get_res = graph_get_entity(graph,
-                                                 entity->ent_name.tok_value);
+    GraphEntityResult get_res = graph_get_entity(graph, &entity->ent_name);
     if (ER_RESULT_OK(get_res)) {
-        return (GraphEntityResult){.res_status = ER_STATUS_ERR,
-                                   .res_err    = "entity redefined"};
+        return (GraphEntityResult){
+            .res_status       = ER_STATUS_PANIC,
+            .res_panicarg     = &entity->ent_name,
+            .res_panichandler = graph_redefined_panic_handler};
     }
 
     ER_GraphEntity *graph_entity = calloc(1, sizeof(*graph_entity));
@@ -101,12 +141,13 @@ static GraphEntityResult graph_add_entity(ER_Graph         *graph,
 
 static GraphRelationResult graph_add_relation(ER_Graph           *graph,
                                               ER_ASTRelationNode *relation) {
-    GraphRelationResult get_res = graph_get_relation(
-        graph,
-        relation->rel_name.tok_value);
+    GraphRelationResult get_res = graph_get_relation(graph,
+                                                     &relation->rel_name);
     if (ER_RESULT_OK(get_res)) {
-        return (GraphRelationResult){.res_status = ER_STATUS_ERR,
-                                     .res_err    = "relation redefined"};
+        return (GraphRelationResult){
+            .res_status       = ER_STATUS_PANIC,
+            .res_panicarg     = &relation->rel_name,
+            .res_panichandler = graph_redefined_panic_handler};
     }
 
     ER_GraphRelation *graph_relation = calloc(1, sizeof(*graph_relation));
@@ -121,10 +162,6 @@ static GraphRelationResult graph_add_relation(ER_Graph           *graph,
              graph_relation);
     return (GraphRelationResult){.res_status = ER_STATUS_OK,
                                  .res_val    = graph_relation};
-}
-
-static inline ER_GraphResult graph_err(const char *msg) {
-    return (ER_GraphResult){.res_status = ER_STATUS_ERR, .res_err = msg};
 }
 
 static inline ER_GraphResult graph_ok(ER_Graph graph) {
@@ -144,7 +181,7 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
 
         GraphEntityResult add_res = graph_add_entity(&graph, ent);
         if (!ER_RESULT_OK(add_res)) {
-            return graph_err(ER_RESULT_ERROR(add_res));
+            return ER_RESULT_CAST(ER_GraphResult, add_res);
         }
     }
 
@@ -156,7 +193,7 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
 
         GraphRelationResult add_res = graph_add_relation(&graph, rel);
         if (!ER_RESULT_OK(add_res)) {
-            return graph_err(ER_RESULT_ERROR(add_res));
+            return ER_RESULT_CAST(ER_GraphResult, add_res);
         }
     }
 
@@ -173,11 +210,10 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
             ER_GraphEdge        *edge = calloc(1, sizeof(*edge));
             assert(NULL != edge);
 
-            GraphRelationResult get_res = graph_get_relation(
-                &graph,
-                ref->ref_relname.tok_value);
+            GraphRelationResult get_res = graph_get_relation(&graph,
+                                                             &ref->ref_relname);
             if (!ER_RESULT_OK(get_res)) {
-                return graph_err(ER_RESULT_ERROR(get_res));
+                return ER_RESULT_CAST(ER_GraphResult, get_res);
             }
 
             ER_GraphRelation *ref_relation = ER_RESULT_GET(get_res);
@@ -194,9 +230,9 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
 
         GraphEntityResult get_res = graph_get_entity(
             &graph,
-            graph_ent->gen_astnode->ent_specifies.tok_value);
+            &graph_ent->gen_astnode->ent_specifies);
         if (!ER_RESULT_OK(get_res)) {
-            return graph_err(ER_RESULT_ERROR(get_res));
+            return ER_RESULT_CAST(ER_GraphResult, get_res);
         }
 
         ER_GraphEntity *specifies = ER_RESULT_GET(get_res);

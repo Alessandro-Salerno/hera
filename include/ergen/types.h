@@ -41,6 +41,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         .str_buf = (s).str_buf + at, .str_len = (s).str_len - at \
     }
 
+#define ER_STRING_SUP(s, at)                                     \
+    (ER_String) {                                                \
+        .str_buf = (s).str_buf - at, .str_len = (s).str_len + at \
+    }
+
 #define ER_STRING_EQ(s1, s2)         \
     ((s1).str_len == (s2).str_len && \
      0 == memcmp((s1).str_buf, (s2).str_buf, (s1).str_len))
