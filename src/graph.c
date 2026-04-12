@@ -79,6 +79,23 @@ static void graph_redefined_panic_handler(void *arg) {
                             ER_STRING_PRINTF(tok->tok_value));
 }
 
+static void graph_cycle_panic_handler(void *arg) {
+    ER_GraphEntity *ent   = arg;
+    ER_Token       *spec  = &ent->gen_astnode->ent_specifies;
+    ER_String       input = ER_STRING_SUP(spec->tok_value, spec->tok_off);
+
+    ER_generic_panic_output(
+        input,
+        spec->tok_row,
+        spec->tok_col,
+        spec->tok_rowstart,
+        spec->tok_col - 1,
+        spec->tok_value.str_len,
+        "specialization of entity '%.*s' from '%.*s' creates a cycle",
+        ER_STRING_PRINTF(ent->gen_astnode->ent_name.tok_value),
+        ER_STRING_PRINTF(spec->tok_value));
+}
+
 static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_Token *name) {
     ER_GraphEntity *ent = NULL;
     HASH_FIND(gen_hh,
@@ -207,6 +224,27 @@ static inline ER_GraphResult graph_ok(ER_Graph graph) {
     return (ER_GraphResult){.res_status = ER_STATUS_OK, .res_val = graph};
 }
 
+static bool graph_has_cycle(ER_GraphEntity *entity) {
+    ER_GraphEntity *slow = entity;
+    ER_GraphEntity *fast = entity;
+
+    while (NULL != fast && NULL != fast->gen_specifies) {
+        slow = slow->gen_specifies;
+        fast = fast->gen_specifies->gen_specifies;
+        if (slow == fast) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static ER_GraphResult graph_panic_cycle(ER_GraphEntity *entity) {
+    return (ER_GraphResult){.res_status       = ER_STATUS_PANIC,
+                            .res_panicarg     = entity,
+                            .res_panichandler = graph_cycle_panic_handler};
+}
+
 ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
     // NOTE: zeroing this structure causes pointer fields to become NULL, which
     // constitutes implicit initialization as per uthash documentation
@@ -278,6 +316,13 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
         graph_ent->gen_specifies  = specifies;
         graph_ent->gen_numspecifiers++;
         TAILQ_INSERT_TAIL(&specifies->gen_specifiers, graph_ent, gen_link);
+    }
+
+    // check loops
+    HASH_ITER(gen_hh, graph.gr_entities, graph_ent, graph_ent_tmp) {
+        if (graph_has_cycle(graph_ent)) {
+            return graph_panic_cycle(graph_ent);
+        }
     }
 
     return graph_ok(graph);

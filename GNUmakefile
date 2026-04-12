@@ -100,3 +100,6 @@ fuzz: bin/$(FUZZ_BINARY)
 clean:
 	rm -rf bin obj
 
+.PHONY: purge
+purge: clean
+	rm -rf fuzz_corpus fuzz_outputs

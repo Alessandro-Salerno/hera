@@ -165,7 +165,7 @@ static ER_Token lexer_new_token(LexerState *lexer, ER_TokenType toktype) {
     tok.tok_value.str_buf = lexer->ls_input.str_buf + lexer->ls_next;
     tok.tok_value.str_len = 0;
     tok.tok_off           = lexer->ls_next;
-    tok.tok_row           = lexer->ls_rowstart;
+    tok.tok_row           = lexer->ls_row;
     tok.tok_col           = lexer->ls_col;
     tok.tok_rowoff        = lexer->ls_bincol;
     tok.tok_rowstart      = lexer->ls_rowstart;
