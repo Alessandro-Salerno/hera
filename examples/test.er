@@ -1,5 +1,5 @@
 // Studente
-entity Studente total exclusive {
+entity Studente total exclusive alias stud {
     attribute "Codice fiscale" key;
     attribute "Cognome";
     attribute "Genere";
@@ -13,7 +13,7 @@ entity Studente total exclusive {
 }
 
 // Specializzazioni studente
-entity "Studente dipendente" specifies Studente {
+entity "Studente dipendente" specifies stud alias sd {
     attribute "Identificatore" key;
 
     relation "Rapporto lavorativo attivo" (1, 1);

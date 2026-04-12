@@ -50,6 +50,7 @@ struct ER_GraphEntity {
     ER_i32            gen_layer;
     ER_i32            gen_col;
     UT_hash_handle    gen_hh;
+    UT_hash_handle    gen_hhalias;
 };
 
 typedef struct ER_GraphEdge {
@@ -71,12 +72,14 @@ struct ER_GraphRelation {
     ER_i32              gre_w;
     ER_i32              gre_h;
     UT_hash_handle      gre_hh;
+    UT_hash_handle      gre_hhalias;
 };
 
 typedef struct ER_Graph {
     ER_GraphEntity   *gr_entities;
     ER_GraphRelation *gr_relations;
-    ER_GraphRelation *gr_root;
+    ER_GraphEntity   *gr_entaliases;
+    ER_GraphRelation *gr_relaliases;
 } ER_Graph;
 
 typedef ER_RESULT(ER_Graph) ER_GraphResult;

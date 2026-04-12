@@ -91,6 +91,16 @@ static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_Token *name) {
         return (GraphEntityResult){.res_status = ER_STATUS_OK, .res_val = ent};
     }
 
+    HASH_FIND(gen_hhalias,
+              graph->gr_entaliases,
+              &name->tok_value,
+              sizeof(name->tok_value),
+              ent);
+
+    if (NULL != ent) {
+        return (GraphEntityResult){.res_status = ER_STATUS_OK, .res_val = ent};
+    }
+
     return (GraphEntityResult){.res_status       = ER_STATUS_PANIC,
                                .res_panicarg     = name,
                                .res_panichandler = graph_unknown_panic_handler};
@@ -100,6 +110,17 @@ static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_Token *name) {
     ER_GraphRelation *rel = NULL;
     HASH_FIND(gre_hh,
               graph->gr_relations,
+              &name->tok_value,
+              sizeof(name->tok_value),
+              rel);
+
+    if (NULL != rel) {
+        return (GraphRelationResult){.res_status = ER_STATUS_OK,
+                                     .res_val    = rel};
+    }
+
+    HASH_FIND(gre_hhalias,
+              graph->gr_relaliases,
               &name->tok_value,
               sizeof(name->tok_value),
               rel);
@@ -135,6 +156,15 @@ static GraphEntityResult graph_add_entity(ER_Graph         *graph,
              gen_astnode->ent_name.tok_value,
              sizeof(ER_String),
              graph_entity);
+
+    if (entity->ent_flags & ER_ENTITY_FLAGS_ALIAS) {
+        HASH_ADD(gen_hhalias,
+                 graph->gr_entaliases,
+                 gen_astnode->ent_alias.tok_value,
+                 sizeof(ER_String),
+                 graph_entity);
+    }
+
     return (GraphEntityResult){.res_status = ER_STATUS_OK,
                                .res_val    = graph_entity};
 }
@@ -160,6 +190,15 @@ static GraphRelationResult graph_add_relation(ER_Graph           *graph,
              gre_astnode->rel_name.tok_value,
              sizeof(ER_String),
              graph_relation);
+
+    if (relation->rel_flags & ER_RELATION_FLAGS_ALIAS) {
+        HASH_ADD(gre_hhalias,
+                 graph->gr_relaliases,
+                 gre_astnode->rel_alias.tok_value,
+                 sizeof(ER_String),
+                 graph_relation);
+    }
+
     return (GraphRelationResult){.res_status = ER_STATUS_OK,
                                  .res_val    = graph_relation};
 }
