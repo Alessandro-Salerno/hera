@@ -53,21 +53,13 @@ int main(int argc, const char *const argv[]) {
     long source_len = ftell(source_file);
     rewind(source_file);
 
-    char *source_buf = malloc(source_len);
+    char *source_buf = malloc(source_len + 1);
     assert(NULL != source_buf);
     fread(source_buf, 1, source_len, source_file);
 
     ER_String s = (ER_String){.str_buf = source_buf, .str_len = source_len};
     ER_LexerResult lex_res = ER_lexer_run(s);
     ER_TokenList   tokens  = *(ER_TokenList *)ER_RESULT_UNWRAP(lex_res);
-
-    for (ER_u64 i = 0; i < EZLD_ARRAY_LENGTH(tokens); i++) {
-        ER_Token *token = EZLD_ARRAY_AT(tokens, i);
-        printf("%zu token(%.*s, %#x)\n",
-               i,
-               ER_STRING_PRINTF(token->tok_value),
-               token->tok_type);
-    }
 
     ER_ParserResult par_res  = ER_parser_run(tokens, s);
     ER_ASTRootNode *ast_root = ER_RESULT_UNWRAP(par_res);

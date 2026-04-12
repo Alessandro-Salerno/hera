@@ -160,6 +160,19 @@ static ER_LexerResult lexer_panic(LexerState *lexer) {
                             .res_panichandler = lexer_panic_handler};
 }
 
+static ER_Token lexer_new_token(LexerState *lexer, ER_TokenType toktype) {
+    ER_Token tok          = {0};
+    tok.tok_value.str_buf = lexer->ls_input.str_buf + lexer->ls_next;
+    tok.tok_value.str_len = 0;
+    tok.tok_off           = lexer->ls_next;
+    tok.tok_row           = lexer->ls_rowstart;
+    tok.tok_col           = lexer->ls_col;
+    tok.tok_rowoff        = lexer->ls_bincol;
+    tok.tok_rowstart      = lexer->ls_rowstart;
+    tok.tok_type          = toktype;
+    return tok;
+}
+
 // Handlers
 
 static LexerInstruction lexer_base_handler(ER_WChar c);
@@ -182,10 +195,13 @@ static LexerInstruction lexer_base_handler(ER_WChar c) {
         case '\n':
         case '\r':
         case '\t':
+        case EOF:
             return (LexerInstruction){.li_handler    = lexer_base_handler,
                                       .li_charaction = LEXER_ACTION_DISCARD,
                                       .li_tokaction  = LEXER_ACTION_DISCARD,
                                       .li_toktype    = ER_TOKEN_TYPE_NONE};
+        default:
+            break;
     }
 
     // Handle single characters
@@ -208,9 +224,6 @@ static LexerInstruction lexer_base_handler(ER_WChar c) {
             break;
         case ',':
             sc_token_type = ER_TOKEN_TYPE_COMMA;
-            break;
-        case EOF:
-            sc_token_type = ER_TOKEN_TYPE_EOF;
             break;
         default:
             sc_token_type = ER_TOKEN_TYPE_NONE;
@@ -298,6 +311,8 @@ static LexerInstruction lexer_multiline_comment_handler(ER_WChar c) {
             .li_charaction = LEXER_ACTION_DISCARD,
             .li_tokaction  = LEXER_ACTION_IGNORE,
             .li_toktype    = ER_TOKEN_TYPE_NONE};
+    } else if ((ER_WChar)EOF == c) {
+        return (LexerInstruction){.li_handler = NULL};
     }
 
     // otherwise keep discarding characters
@@ -313,6 +328,8 @@ static LexerInstruction lexer_multiline_comment2_handler(ER_WChar c) {
                                   .li_charaction = LEXER_ACTION_DISCARD,
                                   .li_tokaction  = LEXER_ACTION_DISCARD,
                                   .li_toktype    = ER_TOKEN_TYPE_NONE};
+    } else if ((ER_WChar)EOF == c) {
+        return (LexerInstruction){.li_handler = NULL};
     }
 
     // go back to regular multine comment state
@@ -331,7 +348,7 @@ static LexerInstruction lexer_string_handler(ER_WChar c) {
                                   .li_toktype    = ER_TOKEN_TYPE_STRING};
     }
 
-    if ('\n' == c) {
+    if ('\n' == c || (ER_WChar)EOF == c) {
         return (LexerInstruction){.li_handler = NULL};
     }
 
@@ -391,6 +408,7 @@ ER_LexerResult ER_lexer_run(ER_String input) {
     while (lexer_can_peek(&lexer)) {
         ER_WCharResult fetch_result = lexer_peek(&lexer);
         if (!ER_RESULT_OK(fetch_result)) {
+            EZLD_ARRAY_FREE(tokens);
             return lexer_panic(&lexer);
         }
 
@@ -398,8 +416,6 @@ ER_LexerResult ER_lexer_run(ER_String input) {
         ER_u64   curr_char_width = lexer_char_width(&lexer); // see lexer_step
         ER_u64   curr_off        = lexer.ls_next;
         ER_u64   end_off         = curr_off + curr_char_width;
-        ER_u64   curr_row        = lexer.ls_row;
-        ER_u64   curr_col        = lexer.ls_col;
         bool     advance         = true;
 
         if ('\n' == curr_char) {
@@ -409,15 +425,8 @@ ER_LexerResult ER_lexer_run(ER_String input) {
         // invariant: curr_token initialization always happens here
         // NOTE: no special case for first iteration or similar
         if (LEXER_ACTION_DISCARD == curr_token_action) {
-            curr_token.tok_value.str_buf = input.str_buf + curr_off;
-            curr_token.tok_value.str_len = 0;
-            curr_token.tok_off           = curr_off;
-            curr_token.tok_row           = curr_row;
-            curr_token.tok_col           = curr_col;
-            curr_token.tok_rowoff        = lexer.ls_bincol;
-            curr_token.tok_rowstart      = lexer.ls_rowstart;
-            curr_token.tok_type          = ER_TOKEN_TYPE_NONE;
-            curr_token_action            = LEXER_ACTION_IGNORE;
+            curr_token        = lexer_new_token(&lexer, ER_TOKEN_TYPE_NONE);
+            curr_token_action = LEXER_ACTION_IGNORE;
         }
 
         LexerInstruction instruction = handler(curr_char);
@@ -465,6 +474,10 @@ ER_LexerResult ER_lexer_run(ER_String input) {
             lexer_step(&lexer);
         }
     }
+
+    // NOTE: we only get here if the loop exited successfully
+    ER_Token eof             = lexer_new_token(&lexer, ER_TOKEN_TYPE_EOF);
+    *EZLD_ARRAY_PUSH(tokens) = eof;
 
     return (ER_LexerResult){.res_status = ER_STATUS_OK, .res_val = tokens};
 }
