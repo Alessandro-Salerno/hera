@@ -1,0 +1,92 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Hera",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#constants"
+		},
+		{
+			"include": "#punctuation"
+		}
+	],
+	"repository": {
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.line.double-slash.hera",
+					"begin": "//",
+					"end": "$"
+				},
+				{
+					"name": "comment.block.hera",
+					"begin": "/\\*",
+					"end": "\\*/"
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.hera",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": []
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.other.hera",
+					"match": "\\b(entity|relation|attribute)\\b"
+				},
+				{
+					"name": "keyword.modifier.hera",
+					"match": "\\b(total|exclusive|specifies|key|alias)\\b"
+				}
+			]
+		},
+		"constants": {
+			"patterns": [
+				{
+					"name": "constant.numeric.hera",
+					"match": "\\b[0-9]+\\b"
+				},
+				{
+					"name": "constant.language.hera",
+					"match": "\\bN\\b"
+				}
+			]
+		},
+		"punctuation": {
+			"patterns": [
+				{
+					"name": "punctuation.separator.hera",
+					"match": "[;,]"
+				},
+				{
+					"name": "punctuation.section.block.begin.hera",
+					"match": "\\{"
+				},
+				{
+					"name": "punctuation.section.block.end.hera",
+					"match": "\\}"
+				},
+				{
+					"name": "punctuation.section.parens.begin.hera",
+					"match": "\\("
+				},
+				{
+					"name": "punctuation.section.parens.end.hera",
+					"match": "\\)"
+				}
+			]
+		}
+	},
+	"scopeName": "source.hera"
+}

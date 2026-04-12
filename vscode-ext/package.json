@@ -1,0 +1,28 @@
+{
+  "name": "hera",
+  "displayName": "Hera",
+  "description": "Support for the Hera Entity-Relationship design language",
+  "version": "0.0.1",
+  "publisher": "Alessandro-Salerno",
+  "author": "Alessandro Salerno",
+  "repository": "https://github.com/Alessandro-Salerno/hera",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "hera",
+      "aliases": ["Hera", "hera"],
+      "extensions": [".er",".hera"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "hera",
+      "scopeName": "source.hera",
+      "path": "./syntaxes/hera.tmLanguage.json"
+    }]
+  }
+}
