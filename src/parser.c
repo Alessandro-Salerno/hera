@@ -208,6 +208,50 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
         entity->ent_flags |= ER_ENTITY_FLAGS_SPECIFIES;
     }
 
+    // parse optional modifiers:
+    // - [total]
+    // = [exclusive]
+    // - [specifies <name>]
+    // - [alias <identifier>]
+    ER_TokenType mod_mask = ER_TOKEN_TYPE_SPECIFIES | ER_TOKEN_TYPE_ALIAS |
+                            ER_TOKEN_TYPE_EXCLUSIVE | ER_TOKEN_TYPE_TOTAL;
+    ParserExpectResult mod_result;
+    while ((mod_result = parser_expect(parser, mod_mask)),
+           ER_RESULT_OK(mod_result)) {
+        ER_Token mod = ER_RESULT_GET(mod_result);
+
+        if (ER_TOKEN_TYPE_SPECIFIES == mod.tok_type) {
+            ParserExpectResult parent_name_res = parser_expect(
+                parser,
+                ER_TOKEN_TYPE_IDENTIFIER | ER_TOKEN_TYPE_STRING);
+            if (!ER_RESULT_OK(parent_name_res)) {
+                return ER_RESULT_CAST(ParserNodeResult, parent_name_res);
+            }
+
+            ER_Token parent_tok   = ER_RESULT_GET(parent_name_res);
+            entity->ent_specifies = parent_tok;
+            entity->ent_flags |= ER_ENTITY_FLAGS_SPECIFIES;
+        } else if (ER_TOKEN_TYPE_TOTAL == mod.tok_type) {
+            entity->ent_flags |= ER_ENTITY_FLAGS_TOTAL;
+        } else if (ER_TOKEN_TYPE_EXCLUSIVE == mod.tok_type) {
+            entity->ent_flags |= ER_ENTITY_FLAGS_EXCLUSIVE;
+        } else if (ER_TOKEN_TYPE_ALIAS == mod.tok_type) {
+            ParserExpectResult alias_res = parser_expect(
+                parser,
+                ER_TOKEN_TYPE_IDENTIFIER);
+            if (!ER_RESULT_OK(alias_res)) {
+                return ER_RESULT_CAST(ParserNodeResult, alias_res);
+            }
+
+            ER_Token alias_tok = ER_RESULT_GET(alias_res);
+            entity->ent_alias  = alias_tok;
+            entity->ent_flags |= ER_ENTITY_FLAGS_ALIAS;
+        }
+
+        mod_mask &= ~mod.tok_type;
+    }
+
+    // {
     ParserExpectResult lblock_res = parser_expect(parser, ER_TOKEN_TYPE_LBLOCK);
     if (!ER_RESULT_OK(lblock_res)) {
         return ER_RESULT_CAST(ParserNodeResult, lblock_res);
@@ -245,28 +289,13 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
         }
     }
 
+    // }
     ParserExpectResult rblock_res = parser_expect(parser, ER_TOKEN_TYPE_RBLOCK);
     if (!ER_RESULT_OK(rblock_res)) {
         return ER_RESULT_CAST(ParserNodeResult, rblock_res);
     }
 
     return parser_node_ok((ER_ASTNode *)entity);
-}
-
-ParserNodeResult parser_do_total(ParserState *parser) {
-    ParserExpectResult entity_res = parser_expect(parser, ER_TOKEN_TYPE_ENTITY);
-    if (!ER_RESULT_OK(entity_res)) {
-        return ER_RESULT_CAST(ParserNodeResult, entity_res);
-    }
-
-    ParserNodeResult body_res = parser_do_entity(parser);
-    if (!ER_RESULT_OK(body_res)) {
-        return body_res;
-    }
-
-    ER_ASTEntityNode *entity = (void *)ER_RESULT_GET(body_res);
-    entity->ent_flags        = ER_ENTITY_FLAGS_TOTAL;
-    return body_res;
 }
 
 ParserNodeResult parser_do_relation(ParserState *parser) {
@@ -279,15 +308,28 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
 
     ER_Token name_tok = ER_RESULT_GET(name_tok_res);
 
-    ParserExpectResult lblock_res = parser_expect(parser, ER_TOKEN_TYPE_LBLOCK);
-    if (!ER_RESULT_OK(lblock_res)) {
-        return ER_RESULT_CAST(ParserNodeResult, lblock_res);
-    }
-
     ER_ASTRelationNode *relation = calloc(1, sizeof(*relation));
     relation->rel_node.an_type   = ER_AST_NODE_TYPE_RELATION;
     relation->rel_name           = name_tok;
     TAILQ_INIT(&relation->rel_attributes);
+
+    // parse optional [alias <identifier>]
+    if (parser_matches_types(parser, ER_TOKEN_TYPE_ALIAS)) {
+        ParserExpectResult alias_res = parser_expect(parser,
+                                                     ER_TOKEN_TYPE_IDENTIFIER);
+        if (!ER_RESULT_OK(alias_res)) {
+            return ER_RESULT_CAST(ParserNodeResult, alias_res);
+        }
+
+        ER_Token alias_tok  = ER_RESULT_GET(alias_res);
+        relation->rel_alias = alias_tok;
+        relation->rel_flags |= ER_RELATION_FLAGS_ALIAS;
+    }
+
+    ParserExpectResult lblock_res = parser_expect(parser, ER_TOKEN_TYPE_LBLOCK);
+    if (!ER_RESULT_OK(lblock_res)) {
+        return ER_RESULT_CAST(ParserNodeResult, lblock_res);
+    }
 
     // we use parser_matches_types instead of parsre_expect because an empty
     // block is legal and there's no path in which this can return the error to
@@ -330,20 +372,12 @@ ER_ParserResult ER_parser_run(ER_TokenList tokens, ER_String input) {
     ParserExpectResult keyword_res;
     while ((keyword_res = parser_expect(&parser,
                                         ER_TOKEN_TYPE_ENTITY |
-                                            ER_TOKEN_TYPE_TOTAL |
                                             ER_TOKEN_TYPE_RELATION)),
            ER_RESULT_OK(keyword_res)) {
         ER_Token tok = ER_RESULT_GET(keyword_res);
 
         if (ER_TOKEN_TYPE_ENTITY == tok.tok_type) {
             ParserNodeResult entity_res = parser_do_entity(&parser);
-            if (!ER_RESULT_OK(entity_res)) {
-                return parser_panic(&parser);
-            }
-            ER_ASTNode *entity = ER_RESULT_GET(entity_res);
-            TAILQ_INSERT_TAIL(&root.rt_entities, entity, an_link);
-        } else if (ER_TOKEN_TYPE_TOTAL == tok.tok_type) {
-            ParserNodeResult entity_res = parser_do_total(&parser);
             if (!ER_RESULT_OK(entity_res)) {
                 return parser_panic(&parser);
             }

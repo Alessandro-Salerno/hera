@@ -1,5 +1,5 @@
 // Studente
-total entity Studente {
+entity Studente total exclusive {
     attribute "Codice fiscale" key;
     attribute "Cognome";
     attribute "Genere";
@@ -26,7 +26,7 @@ entity "Studente autonomo" specifies Studente {
 }
 
 // Datore di lavoro
-total entity "Datore di lavoro" {
+entity "Datore di lavoro" total exclusive {
     attribute "Nome" key;
     attribute "Indirizzo sede";
 
@@ -81,7 +81,7 @@ relation "Ha frequentato" {
 }
 
 // Insegnante
-total entity Insegnante {
+entity Insegnante total exclusive {
     attribute "Codice fiscale" key;
     attribute "Cognome";
     attribute "Data di nascita"; 

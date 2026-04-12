@@ -48,7 +48,9 @@ typedef enum ER_TokenType {
     ER_TOKEN_TYPE_LBLOCK     = 1 << 12,
     ER_TOKEN_TYPE_RBLOCK     = 1 << 13,
     ER_TOKEN_TYPE_COMMA      = 1 << 14,
-    ER_TOKEN_TYPE_EOF        = 1 << 15
+    ER_TOKEN_TYPE_EXCLUSIVE  = 1 << 15,
+    ER_TOKEN_TYPE_ALIAS      = 1 << 16,
+    ER_TOKEN_TYPE_EOF        = 1 << 17
 } ER_TokenType;
 
 typedef struct ER_Token {

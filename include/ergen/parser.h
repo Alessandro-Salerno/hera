@@ -33,10 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define ER_ENTITY_FLAGS_TOTAL     1
 #define ER_ENTITY_FLAGS_SPECIFIES 2
+#define ER_ENTITY_FLAGS_ALIAS     4
+#define ER_ENTITY_FLAGS_EXCLUSIVE 8
 
 #define ER_ATTRIBUTE_FLAGS_KEY 1
 
 #define ER_REFERENCE_FLAGS_KEY 1
+
+#define ER_RELATION_FLAGS_ALIAS 1
 
 typedef enum ER_ASTNodeType {
     ER_AST_NODE_TYPE_NONE      = 0,
@@ -62,6 +66,7 @@ typedef struct ER_ASTEntityNode {
     ER_ASTNode ent_node;
     ER_Token   ent_name;
     ER_Token   ent_specifies;
+    ER_Token   ent_alias;
     ER_u64     ent_flags;
     TAILQ_HEAD(, ER_ASTNode) ent_relations; // of type ER_ASTReferenceNode
     TAILQ_HEAD(, ER_ASTNode) ent_attributes;
@@ -78,6 +83,8 @@ typedef struct ER_ASTReferenceNode {
 typedef struct ER_ASTRelationNode {
     ER_ASTNode rel_node;
     ER_Token   rel_name;
+    ER_Token   rel_alias;
+    ER_u64     rel_flags;
     TAILQ_HEAD(, ER_ASTNode) rel_attributes; // of type ER_ASTAttributeNode
 } ER_ASTRelationNode;
 
