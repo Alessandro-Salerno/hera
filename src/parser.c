@@ -361,8 +361,9 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
 
 ER_ParserResult ER_parser_run(ER_TokenList tokens, ER_String input) {
     ParserState parser = {0};
-    parser.par_tokens  = tokens;
-    parser.par_input   = input;
+    assert(!EZLD_ARRAY_IS_EMPTY(tokens));
+    parser.par_tokens = tokens;
+    parser.par_input  = input;
 
     ER_ASTRootNode root;
     root.rt_node.an_type = ER_AST_NODE_TYPE_ROOT;

@@ -89,13 +89,12 @@ static void lexer_reset_row(LexerState *lexer) {
     lexer->ls_rowstart = lexer->ls_next + 1;
 }
 
-static ER_WCharResult lexer_peek(LexerState *lexer) {
-    if (lexer->ls_next > lexer->ls_input.str_len) {
-        return (ER_WCharResult){
-            .res_status = ER_STATUS_ERR,
-            .res_err    = "attempt at character lookup past end of file"};
-    }
+// NOTE: we include <= and not < because parser_peek has a special case for that
+static bool lexer_can_peek(LexerState *lexer) {
+    return lexer->ls_next <= lexer->ls_input.str_len;
+}
 
+static ER_WCharResult lexer_peek(LexerState *lexer) {
     if (lexer->ls_next == lexer->ls_input.str_len) {
         return lexer_fetch_result(EOF);
     }
@@ -385,8 +384,16 @@ ER_LexerResult ER_lexer_run(ER_String input) {
     ER_Token     curr_token        = {0};
     LexerAction  curr_token_action = LEXER_ACTION_DISCARD;
 
-    ER_WCharResult fetch_result;
-    while ((fetch_result = lexer_peek(&lexer)), ER_RESULT_OK(fetch_result)) {
+    // NOTE: this loop used to be "hera-style", i.e. it used to perform
+    // ER_RESULT_OK() checks inside the loop condition and use that to break.
+    // This was changed because it didn't distinguish between invalid UTF8
+    // characters and EOF correctly
+    while (lexer_can_peek(&lexer)) {
+        ER_WCharResult fetch_result = lexer_peek(&lexer);
+        if (!ER_RESULT_OK(fetch_result)) {
+            return lexer_panic(&lexer);
+        }
+
         ER_WChar curr_char       = ER_RESULT_GET(fetch_result);
         ER_u64   curr_char_width = lexer_char_width(&lexer); // see lexer_step
         ER_u64   curr_off        = lexer.ls_next;

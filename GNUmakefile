@@ -14,7 +14,7 @@ FUZZ_CC := clang
 
 CFLAGS := \
 	-pipe\
-	-O3 \
+	-O3 -g3 \
 	-I include/ \
 	-Wall \
 	-Wextra \

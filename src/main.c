@@ -61,13 +61,13 @@ int main(int argc, const char *const argv[]) {
     ER_LexerResult lex_res = ER_lexer_run(s);
     ER_TokenList   tokens  = *(ER_TokenList *)ER_RESULT_UNWRAP(lex_res);
 
-    /*for (ER_u64 i = 0; i < EZLD_ARRAY_LENGTH(tokens); i++) {
+    for (ER_u64 i = 0; i < EZLD_ARRAY_LENGTH(tokens); i++) {
         ER_Token *token = EZLD_ARRAY_AT(tokens, i);
         printf("%zu token(%.*s, %#x)\n",
                i,
                ER_STRING_PRINTF(token->tok_value),
                token->tok_type);
-    }*/
+    }
 
     ER_ParserResult par_res  = ER_parser_run(tokens, s);
     ER_ASTRootNode *ast_root = ER_RESULT_UNWRAP(par_res);
