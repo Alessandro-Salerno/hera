@@ -1,0 +1,43 @@
+// University Management System
+// Demonstrates specialization, inheritance, and cardinality constraints
+
+entity Person total exclusive alias p {
+    attribute "ID Number" key;
+    attribute Name;
+    attribute "Birth Date";
+}
+
+entity Student specifies Person {
+    attribute "Enrollment Year";
+    attribute Major;
+
+    relation Enrolls (1, N);
+}
+
+entity Professor specifies Person {
+    attribute Department;
+    attribute "Office Number";
+
+    relation Teaches (1, N);
+}
+
+entity Course {
+    attribute Code key;
+    attribute Title;
+    attribute Credits;
+
+    relation Enrolls (0, N);
+    relation Teaches (1, 1);
+    relation Requirements (0, N);
+}
+
+relation Enrolls {
+    attribute Grade;
+    attribute Semester;
+}
+
+relation Teaches {
+}
+
+relation Requirements {
+}

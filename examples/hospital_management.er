@@ -1,0 +1,129 @@
+// Hospital Management System
+// An extensive example with multiple layers of specialization and complex relationships.
+
+entity Employee total exclusive {
+    attribute "Employee ID" key;
+    attribute Name;
+    attribute "Joining Date";
+    attribute Salary;
+}
+
+entity Doctor specifies Employee {
+    attribute Specialization;
+    attribute "License Number" key;
+
+    relation Treats (0, N);
+    relation Consults (0, N);
+    relation Prescribes (0, N);
+}
+
+entity Nurse specifies Employee {
+    attribute "Shift Time";
+    attribute Qualification;
+
+    relation Assists (0, N);
+}
+
+entity Admin specifies Employee {
+    attribute "Job Title";
+    attribute Responsibility;
+}
+
+entity Patient {
+    attribute "Patient ID" key;
+    attribute Name;
+    attribute Gender;
+    attribute "Date of Birth";
+    attribute Address;
+    attribute Phone;
+
+    relation Treats (1, N);
+    relation Consults (1, N);
+    relation Prescribes (1, N);
+    relation AdmittedTo (0, 1);
+}
+
+entity Room {
+    attribute "Room Number" key;
+    attribute Type;
+    attribute "Daily Charge";
+
+    relation AdmittedTo (0, N);
+    relation ManagedBy (1, 1);
+}
+
+entity Medicine {
+    attribute "Code" key;
+    attribute Name;
+    attribute Manufacturer;
+    attribute "Unit Price";
+
+    relation Prescribes (0, N);
+}
+
+entity Department {
+    attribute "Name" key;
+    attribute Location;
+
+    relation BelongsTo (0, N);
+}
+
+relation Treats {
+    attribute "Start Date";
+    attribute "End Date";
+}
+
+relation Consults {
+    attribute "Consultation Time" key;
+    attribute "Consultation Fee";
+}
+
+relation Prescribes {
+    attribute Dosage;
+    attribute Duration;
+}
+
+relation AdmittedTo {
+    attribute "Admission Date" key;
+    attribute "Discharge Date";
+}
+
+relation ManagedBy {
+}
+
+relation Assists {
+}
+
+relation BelongsTo {
+}
+
+/*
+Advanced relationships can involve:
+- Multi-level specialization: Employee -> Doctor -> Surgeon
+- Many-to-many relationships with multiple key attributes
+- Complex constraints for patient-room occupancy
+*/
+
+entity Surgeon specifies Doctor {
+    attribute "Surgery Specialty";
+    attribute "Years of Experience";
+
+    relation Operates (0, N);
+}
+
+entity Surgery {
+    attribute "Surgery ID" key;
+    attribute Name;
+    attribute Complexity;
+
+    relation Operates (1, N);
+    relation RequiresPatient (1, 1);
+}
+
+relation Operates {
+    attribute "Surgery Date" key;
+    attribute "Outcome";
+}
+
+relation RequiresPatient {
+}

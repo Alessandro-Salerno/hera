@@ -1,0 +1,33 @@
+// Basic Blog System
+// This example demonstrates simple entities and relations
+
+entity User {
+    attribute Username key;
+    attribute Email;
+    attribute "Join Date";
+
+    relation Writes (0, N);
+}
+
+entity Post {
+    attribute Title key;
+    attribute Content;
+    attribute "Publication Date";
+
+    relation Writes (1, 1);
+    relation Categorized (1, N);
+}
+
+entity Category {
+    attribute Name key;
+    attribute Description;
+
+    relation Categorized (0, N);
+}
+
+relation Writes {
+    attribute "Draft Status";
+}
+
+relation Categorized {
+}

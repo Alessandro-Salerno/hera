@@ -1,0 +1,91 @@
+// E-Commerce System Design
+// A comprehensive example showing complex designs, many-to-many relations with attributes, and overlapping specialization.
+
+entity Customer total exclusive alias cust {
+    attribute "Customer ID" key;
+    attribute Name;
+    attribute Email;
+    attribute Address;
+    attribute Phone;
+
+    relation Places (0, N);
+    relation Writes (0, N);
+}
+
+entity RegisteredCustomer specifies Customer {
+    attribute Password;
+    attribute "Last Login";
+    attribute LoyaltyPoints;
+}
+
+entity GuestCustomer specifies Customer {
+    attribute "Session ID" key;
+}
+
+entity Order alias ord {
+    attribute "Order ID" key;
+    attribute Date;
+    attribute "Total Amount";
+    attribute Status;
+
+    relation Places (1, 1);
+    relation Contains (1, N);
+    relation ShippedVia (1, 1);
+}
+
+entity Product alias prod {
+    attribute SKU key;
+    attribute Name;
+    attribute Description;
+    attribute Price;
+    attribute "Stock Level";
+
+    relation Contains (0, N);
+    relation Categorized (1, N);
+    relation Writes (0, N);
+}
+
+entity Category {
+    attribute "Category Name" key;
+    attribute Description;
+
+    relation Categorized (0, N);
+}
+
+entity Shipper {
+    attribute "Shipper ID" key;
+    attribute "Company Name";
+    attribute Phone;
+
+    relation ShippedVia (0, N);
+}
+
+entity Review {
+    attribute "Review ID" key;
+    attribute Rating;
+    attribute Comment;
+    attribute "Review Date";
+
+    relation Writes (1, 1);
+}
+
+relation Places {
+    attribute "IP Address";
+}
+
+relation Contains {
+    attribute Quantity;
+    attribute "Unit Price";
+}
+
+relation ShippedVia {
+    attribute TrackingNumber key;
+    attribute "Ship Date";
+    attribute "Estimated Delivery";
+}
+
+relation Categorized {
+}
+
+relation Writes {
+}
