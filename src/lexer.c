@@ -166,6 +166,8 @@ static ER_LexerResult lexer_panic(LexerState *lexer) {
 static LexerInstruction lexer_base_handler(ER_WChar c);
 static LexerInstruction lexer_comment_handler(ER_WChar c);
 static LexerInstruction lexer_comment2_handler(ER_WChar c);
+static LexerInstruction lexer_multiline_comment_handler(ER_WChar c);
+static LexerInstruction lexer_multiline_comment2_handler(ER_WChar c);
 static LexerInstruction lexer_string_handler(ER_WChar c);
 static LexerInstruction lexer_keyword_identifier_handler(ER_WChar c);
 static LexerInstruction lexer_number_handler(ER_WChar c);
@@ -263,6 +265,11 @@ static LexerInstruction lexer_comment_handler(ER_WChar c) {
                                   .li_charaction = LEXER_ACTION_DISCARD,
                                   .li_tokaction  = LEXER_ACTION_IGNORE,
                                   .li_toktype    = ER_TOKEN_TYPE_NONE};
+    } else if ('*' == c) {
+        return (LexerInstruction){.li_handler = lexer_multiline_comment_handler,
+                                  .li_charaction = LEXER_ACTION_DISCARD,
+                                  .li_tokaction  = LEXER_ACTION_IGNORE,
+                                  .li_toktype    = ER_TOKEN_TYPE_NONE};
     }
 
     return (LexerInstruction){.li_handler = NULL};
@@ -279,6 +286,38 @@ static LexerInstruction lexer_comment2_handler(ER_WChar c) {
 
     // otherwise keep discarding characters
     return (LexerInstruction){.li_handler    = lexer_comment2_handler,
+                              .li_charaction = LEXER_ACTION_DISCARD,
+                              .li_tokaction  = LEXER_ACTION_IGNORE,
+                              .li_toktype    = ER_TOKEN_TYPE_NONE};
+}
+
+static LexerInstruction lexer_multiline_comment_handler(ER_WChar c) {
+    // closing multiline comment
+    if ('*' == c) {
+        return (LexerInstruction){
+            .li_handler    = lexer_multiline_comment2_handler,
+            .li_charaction = LEXER_ACTION_DISCARD,
+            .li_tokaction  = LEXER_ACTION_IGNORE,
+            .li_toktype    = ER_TOKEN_TYPE_NONE};
+    }
+
+    // otherwise keep discarding characters
+    return (LexerInstruction){.li_handler    = lexer_multiline_comment_handler,
+                              .li_charaction = LEXER_ACTION_DISCARD,
+                              .li_tokaction  = LEXER_ACTION_IGNORE,
+                              .li_toktype    = ER_TOKEN_TYPE_NONE};
+}
+
+static LexerInstruction lexer_multiline_comment2_handler(ER_WChar c) {
+    if ('/' == c) {
+        return (LexerInstruction){.li_handler    = lexer_base_handler,
+                                  .li_charaction = LEXER_ACTION_DISCARD,
+                                  .li_tokaction  = LEXER_ACTION_DISCARD,
+                                  .li_toktype    = ER_TOKEN_TYPE_NONE};
+    }
+
+    // go back to regular multine comment state
+    return (LexerInstruction){.li_handler    = lexer_multiline_comment_handler,
                               .li_charaction = LEXER_ACTION_DISCARD,
                               .li_tokaction  = LEXER_ACTION_IGNORE,
                               .li_toktype    = ER_TOKEN_TYPE_NONE};
