@@ -57,4 +57,7 @@ dkms.conf
 bin/
 plugins/treesitter/src
 
+fuzz_corpus
+fuzz_outputs
+
 *.svg

@@ -4,11 +4,13 @@ MAKEFLAGS += -rR
 rwildcard = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard ,$d, $2) $(filter $(subst *, %, $2),$d))
 
 TOOL_BINARY := hera
+FUZZ_BINARY := hera-fuzzer
 VSCODE_EXTENSION := hera.vsix
 TREESITTER_PARSER := treesitter-hera.so
 
 CC := cc
 LD := cc
+FUZZ_CC := clang
 
 CFLAGS := \
 	-pipe\
@@ -21,7 +23,12 @@ CFLAGS := \
 	-std=gnu11 \
 	-MMD -MP
 
+FUZZ_CFLAGS := $(filter-out -O3, $(CFLAGS)) \
+			   -O0 -g3 -fsanitize=fuzzer,address,undefined \
+			   -fno-omit-frame-pointer
+
 CFILES := $(call rwildcard, src, *.c)
+FUZZ_CFILES := $(filter-out src/main.c, $(CFILES)) fuzz/libfuzzer.c
 OBJ := $(addprefix obj/,$(CFILES:.c=.c.o) $(ASFILES:.S=.S.o) $(NASMFILES:.asm=.asm.o))
 HEADER_DEPS := $(addprefix obj/,$(CFILES:.c=.c.d) $(ASFILES:.S=.S.d))
 
@@ -34,6 +41,14 @@ tool: bin/$(TOOL_BINARY)
 
 .PHONY: extra
 extra: bin/$(VSCODE_EXTENSION) bin/$(TREESITTER_PARSER)
+
+.PHONY: fuzzer
+fuzzer: bin/$(FUZZ_BINARY)
+
+bin/$(FUZZ_BINARY): $(FUZZ_CFILES)
+	@echo "    CC " $(FUZZ_CFILES)
+	@mkdir -p "$$(dirname $@)"
+	$(FUZZ_CC) $(FUZZ_CFLAGS) $(FUZZ_CFILES) -o $@
 
 bin/$(TOOL_BINARY): GNUmakefile $(OBJ)
 	@echo "    LD " $(OBJ)
@@ -67,6 +82,19 @@ install: tool
 .PHONY: uninstall
 uninstall:
 	rm /usr/bin/$(TOOL_BINARY)
+
+.PHONY: fuzz
+fuzz: bin/$(FUZZ_BINARY)
+	@echo "[*] Running fuzzer with corpus: $(CORPUS)"
+	mkdir -p fuzz_outputs/ && mkdir -p fuzz_corpus && cp examples/* fuzz_corpus/ && \
+		cd fuzz_outputs && \
+			ASAN_SYMBOLIZER_PATH=$(shell which llvm-symbolizer) \
+			ASAN_OPTIONS=detect_leaks=0:symbolize=1 \
+		../bin/$(FUZZ_BINARY) \
+			-max_len=8192 \
+			-use_value_profile=1 \
+			-entropic=1 \
+			../fuzz_corpus/
 
 .PHONY: clean
 clean:
