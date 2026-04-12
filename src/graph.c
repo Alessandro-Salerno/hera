@@ -26,9 +26,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <assert.h>
-#include <ergen/graph.h>
-#include <ergen/svg.h>
-#include <ergen/util.h>
+#include <hera/graph.h>
+#include <hera/svg.h>
+#include <hera/util.h>
 #include <stdbool.h>
 #include <stdlib.h>
 

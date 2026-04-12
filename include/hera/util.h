@@ -27,8 +27,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <ergen/result.h>
-#include <ergen/types.h>
+#include <hera/result.h>
+#include <hera/types.h>
 
 #define ER_MIN(x, y)        \
     ({                      \

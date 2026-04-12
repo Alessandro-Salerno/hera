@@ -28,9 +28,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <bsd/queue.h>
-#include <ergen/parser.h>
-#include <ergen/result.h>
-#include <ergen/types.h>
+#include <hera/parser.h>
+#include <hera/result.h>
+#include <hera/types.h>
 #include <ezld/array.h>
 #include <uthash/uthash.h>
 

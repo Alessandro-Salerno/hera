@@ -26,8 +26,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <assert.h>
-#include <ergen/lexer.h>
-#include <ergen/util.h>
+#include <hera/lexer.h>
+#include <hera/util.h>
 #include <stdbool.h>
 #include <stdio.h>
 

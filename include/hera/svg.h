@@ -27,7 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <ergen/graph.h>
+#include <hera/graph.h>
 
 #define ER_SVG_WIDTH       1600
 #define ER_SVG_HEIGHT      1600

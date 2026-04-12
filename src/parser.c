@@ -30,8 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // version of the standard) and also the gain would be minimal since the tool
 // will still exit shortly after the error here
 
-#include <ergen/parser.h>
-#include <ergen/util.h>
+#include <hera/parser.h>
+#include <hera/util.h>
 #include <stdbool.h>
 
 typedef struct ParserState {

@@ -26,10 +26,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <assert.h>
-#include <ergen/graph.h>
-#include <ergen/lexer.h>
-#include <ergen/parser.h>
-#include <ergen/svg.h>
+#include <hera/graph.h>
+#include <hera/lexer.h>
+#include <hera/parser.h>
+#include <hera/svg.h>
 #include <stdio.h>
 
 int main(int argc, const char *const argv[]) {

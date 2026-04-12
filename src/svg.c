@@ -25,8 +25,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <ergen/svg.h>
-#include <ergen/util.h>
+#include <hera/svg.h>
+#include <hera/util.h>
 #include <stdio.h>
 
 static void svg_emit_attributes(ER_ASTNode *first, ER_i32 x, ER_i32 y) {

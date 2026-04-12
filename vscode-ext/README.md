@@ -13,4 +13,4 @@ Simply open any `.er` or `.hera` file in VS Code to see Hera syntax highlighting
 
 ## License
 
-This extension is part of the `ergen` project and is licensed under the same terms.
+This extension is part of the `hera` project and is licensed under the same terms.

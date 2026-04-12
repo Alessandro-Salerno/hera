@@ -28,8 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <bsd/queue.h>
-#include <ergen/lexer.h>
-#include <ergen/types.h>
+#include <hera/lexer.h>
+#include <hera/types.h>
 
 #define ER_ENTITY_FLAGS_TOTAL     1
 #define ER_ENTITY_FLAGS_SPECIFIES 2
