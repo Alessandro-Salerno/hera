@@ -43,9 +43,20 @@ will be encouraged to adopt a reasonably consistent and clean naming convention
 for commit messages. An example would be the use of conventions similar to those
 described in the previous section. 
 
+## Code quality and standards
+Contributions are expected to follow existing conventions and standards used
+across the code base. These are described in more detail in [`docs/conventions.md`](./docs/conventions.md).
+
 ## Contribution workflow
 1. Fork the repository
 2. Create a new branch 
 3. Make your changes
-4. Commit to your branch
-5. Open a pull request
+4. Format the code using the provided `.clang-format` configuration
+5. Commit to your branch
+6. Open a pull request
+
+## AI policy
+The use of Artificial Intelligence and other generative tools is allowed,
+provided the contributor checks and tests the validity and correctness of the
+generated material, ensures it complies with this document, and discloses the
+use of said technologies.
