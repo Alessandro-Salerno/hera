@@ -1,4 +1,4 @@
-# hera
+# Hera
 
 [contributors-shield]: https://img.shields.io/github/contributors/Alessandro-Salerno/hera.svg?style=flat-square
 [contributors-url]: https://github.com/Alessandro-Salerno/hera/graphs/contributors
@@ -20,7 +20,7 @@
 
 Create SVG Entity-Relationship diagrams using a simple text-based formal language
 
-## Why hera?
+## Why Hera?
 ER diagrams are often used in database implementation during the initial design phases, particularly as part of a [Conceptual Design](https://mariadb.com/docs/general-resources/database-theory/database-design/database-design-phase-2-conceptual-design). 
 Such diagrams are also widely used in academia, being employed by introductory and advanced DB courses alike. 
 
