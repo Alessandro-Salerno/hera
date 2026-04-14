@@ -48,27 +48,27 @@ typedef ER_RESULT(ER_u64) ER_WCharLengthResult;
 typedef ER_RESULT(ER_WChar) ER_WCharResult;
 
 static inline ER_WCharLengthResult ER_char_width(ER_String s) {
-    if (0 == s.str_len) {
+    if (s.str_len == 0) {
         return (ER_WCharLengthResult){ER_STATUS_ERR, .res_err = "empty string"};
     }
 
     unsigned char c = (unsigned char)s.str_buf[0];
 
-    if (0 == (c & 0x80)) {
+    if ((c & 0x80) == 0) {
         return (ER_WCharLengthResult){ER_STATUS_OK, .res_val = 1};
-    } else if (0xC0 == (c & 0xE0)) {
+    } else if ((c & 0xE0) == 0xC0) {
         if (s.str_len < 2) {
             return (ER_WCharLengthResult){ER_STATUS_ERR,
                                           .res_err = "truncated utf8"};
         }
         return (ER_WCharLengthResult){ER_STATUS_OK, .res_val = 2};
-    } else if (0xE0 == (c & 0xF0)) {
+    } else if ((c & 0xF0) == 0xE0) {
         if (s.str_len < 3) {
             return (ER_WCharLengthResult){ER_STATUS_ERR,
                                           .res_err = "truncated utf8"};
         }
         return (ER_WCharLengthResult){ER_STATUS_OK, .res_val = 3};
-    } else if (0xF0 == (c & 0xF8)) {
+    } else if ((c & 0xF8) == 0xF0) {
         if (s.str_len < 4) {
             return (ER_WCharLengthResult){ER_STATUS_ERR,
                                           .res_err = "truncated utf8"};
@@ -98,14 +98,14 @@ static inline ER_WCharResult ER_char_to_wchar(ER_String s) {
             break;
 
         case 2:
-            if (0x80 != (buf[1] & 0xC0))
+            if ((buf[1] & 0xC0) != 0x80)
                 return (ER_WCharResult){ER_STATUS_ERR,
                                         .res_err = "invalid utf8 continuation"};
             codepoint = ((buf[0] & 0x1F) << 6) | (buf[1] & 0x3F);
             break;
 
         case 3:
-            if (0x80 != (buf[1] & 0xC0) || 0x80 != (buf[2] & 0xC0))
+            if ((buf[1] & 0xC0) != 0x80 || (buf[2] & 0xC0) != 0x80)
                 return (ER_WCharResult){ER_STATUS_ERR,
                                         .res_err = "invalid utf8 continuation"};
             codepoint = ((buf[0] & 0x0F) << 12) | ((buf[1] & 0x3F) << 6) |
@@ -113,8 +113,8 @@ static inline ER_WCharResult ER_char_to_wchar(ER_String s) {
             break;
 
         case 4:
-            if (0x80 != (buf[1] & 0xC0) || 0x80 != (buf[2] & 0xC0) ||
-                0x80 != (buf[3] & 0xC0))
+            if ((buf[1] & 0xC0) != 0x80 || (buf[2] & 0xC0) != 0x80 ||
+                (buf[3] & 0xC0) != 0x80)
                 return (ER_WCharResult){ER_STATUS_ERR,
                                         .res_err = "invalid utf8 continuation"};
             codepoint = ((buf[0] & 0x07) << 18) | ((buf[1] & 0x3F) << 12) |

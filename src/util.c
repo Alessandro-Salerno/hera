@@ -48,7 +48,7 @@ void ER_generic_panic_output(ER_String   input,
 
     // --- Find end of the line ---
     ER_u64 line_end = err_lstart;
-    while (line_end < len && '\n' != buf[line_end]) {
+    while (line_end < len && buf[line_end] != '\n') {
         line_end++;
     }
 
@@ -90,7 +90,7 @@ void ER_generic_panic_output(ER_String   input,
 
     fprintf(stderr, COLOR_GREEN);
 
-    if (0 == underline_len) {
+    if (underline_len == 0) {
         fputc('^', stderr);
     } else {
         fputc('^', stderr);

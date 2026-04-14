@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 
 int main(int argc, const char *const argv[]) {
-    if (2 != argc) {
+    if (argc != 2) {
         fprintf(stderr,
                 "fatal error: incorrect number of arguments\tusage: %s <source "
                 "file>\n",
@@ -44,7 +44,7 @@ int main(int argc, const char *const argv[]) {
     const char *source_path = argv[1];
     FILE       *source_file = fopen(source_path, "r");
 
-    if (NULL == source_file) {
+    if (source_file == NULL) {
         fprintf(stderr, "fatal error: unable to open file '%s'\n", source_path);
         return EXIT_FAILURE;
     }
@@ -54,7 +54,7 @@ int main(int argc, const char *const argv[]) {
     rewind(source_file);
 
     char *source_buf = malloc(source_len + 1);
-    assert(NULL != source_buf);
+    assert(source_buf != NULL);
     fread(source_buf, 1, source_len, source_file);
 
     ER_String s = (ER_String){.str_buf = source_buf, .str_len = source_len};

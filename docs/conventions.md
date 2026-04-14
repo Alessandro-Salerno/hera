@@ -40,7 +40,6 @@ and automatically applied by the relevant tools.
 These formatting rules shall not apply to files originating from third-parties.
 
 ### Style
-- Equality and inequality comparisons against constants shall use Yoda notation
 - Constructs, including but not limited to branches and loops, shall not omit
     curly braces
 - Usage of Hera-specific types and mechanisms, such as those defined in [`include/hera/types.h`](../include/hera/types.h),
@@ -64,10 +63,6 @@ An exemption is made to these provisions for files originating from third-partie
 An exemption is made to these provisions for files originating from third-parties.
 
 ### Justification
-- **Yoda notation:** while uncommon in modern code bases, it aids readability
-    in the presence of repeated comparisons of the same variable against
-    different constants, especially when using large font sizes or screen
-    magnifiers
 - **Field prefixes:**  while also uncommon, this is expected to help distinguish
     container types when type information is not immediately visibile, as is the
     case, for example, in macros, direct dereferences of function return values,

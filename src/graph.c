@@ -104,7 +104,7 @@ static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_Token *name) {
               sizeof(name->tok_value),
               ent);
 
-    if (NULL != ent) {
+    if (ent != NULL) {
         return (GraphEntityResult){.res_status = ER_STATUS_OK, .res_val = ent};
     }
 
@@ -114,7 +114,7 @@ static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_Token *name) {
               sizeof(name->tok_value),
               ent);
 
-    if (NULL != ent) {
+    if (ent != NULL) {
         return (GraphEntityResult){.res_status = ER_STATUS_OK, .res_val = ent};
     }
 
@@ -131,7 +131,7 @@ static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_Token *name) {
               sizeof(name->tok_value),
               rel);
 
-    if (NULL != rel) {
+    if (rel != NULL) {
         return (GraphRelationResult){.res_status = ER_STATUS_OK,
                                      .res_val    = rel};
     }
@@ -142,7 +142,7 @@ static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_Token *name) {
               sizeof(name->tok_value),
               rel);
 
-    if (NULL != rel) {
+    if (rel != NULL) {
         return (GraphRelationResult){.res_status = ER_STATUS_OK,
                                      .res_val    = rel};
     }
@@ -164,7 +164,7 @@ static GraphEntityResult graph_add_entity(ER_Graph         *graph,
     }
 
     ER_GraphEntity *graph_entity = calloc(1, sizeof(*graph_entity));
-    assert(NULL != graph_entity);
+    assert(graph_entity != NULL);
     graph_entity->gen_astnode = entity;
     TAILQ_INIT(&graph_entity->gen_specifiers);
 
@@ -198,7 +198,7 @@ static GraphRelationResult graph_add_relation(ER_Graph           *graph,
     }
 
     ER_GraphRelation *graph_relation = calloc(1, sizeof(*graph_relation));
-    assert(NULL != graph_relation);
+    assert(graph_relation != NULL);
     graph_relation->gre_astnode = relation;
     TAILQ_INIT(&graph_relation->gre_edges);
 
@@ -228,7 +228,7 @@ static bool graph_has_cycle(ER_GraphEntity *entity) {
     ER_GraphEntity *slow = entity;
     ER_GraphEntity *fast = entity;
 
-    while (NULL != fast && NULL != fast->gen_specifies) {
+    while (fast != NULL && fast->gen_specifies != NULL) {
         slow = slow->gen_specifies;
         fast = fast->gen_specifies->gen_specifies;
         if (slow == fast) {
@@ -332,7 +332,7 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
 // experimental**
 
 static ER_i32 graph_calculate_entity_layer(ER_GraphEntity *ent) {
-    if (NULL == ent->gen_specifies) {
+    if (ent->gen_specifies == NULL) {
         return 0;
     }
 

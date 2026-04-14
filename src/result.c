@@ -34,13 +34,13 @@ void *ER_result_unwrap_impl(ER_Status              status,
                             const char            *message,
                             ER_ResultPanicHandler *panic_handler,
                             void                  *panic_arg) {
-    if (ER_STATUS_OK == status) {
+    if (status == ER_STATUS_OK) {
         return val;
     }
 
-    if (ER_STATUS_ERR == status) {
+    if (status == ER_STATUS_ERR) {
         fprintf(stderr, "unwrap error: %s", message);
-    } else if (ER_STATUS_PANIC == status) {
+    } else if (status == ER_STATUS_PANIC) {
         panic_handler(panic_arg);
     }
 
