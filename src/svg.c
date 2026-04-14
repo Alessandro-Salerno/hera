@@ -184,7 +184,7 @@ static void svg_emit_generalizations(ER_Graph *graph) {
         ER_GraphEntity *child;
         ER_u64          child_count = parent->gen_numspecifiers;
 
-        if (0 == child_count) {
+        if (child_count == 0) {
             continue;
         }
 

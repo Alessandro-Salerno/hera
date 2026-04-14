@@ -253,7 +253,7 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
     // add entities to the entity hashmap
     ER_ASTNode *ast_ent;
     TAILQ_FOREACH(ast_ent, &ast_root->rt_entities, an_link) {
-        assert(ER_AST_NODE_TYPE_ENTITY == ast_ent->an_type);
+        assert(ast_ent->an_type == ER_AST_NODE_TYPE_ENTITY);
         ER_ASTEntityNode *ent = (void *)ast_ent;
 
         GraphEntityResult add_res = graph_add_entity(&graph, ent);
@@ -265,7 +265,7 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
     // add relations to the relation hashmap
     ER_ASTNode *ast_rel;
     TAILQ_FOREACH(ast_rel, &ast_root->rt_relations, an_link) {
-        assert(ER_AST_NODE_TYPE_RELATION == ast_rel->an_type);
+        assert(ast_rel->an_type == ER_AST_NODE_TYPE_RELATION);
         ER_ASTRelationNode *rel = (void *)ast_rel;
 
         GraphRelationResult add_res = graph_add_relation(&graph, rel);
@@ -282,10 +282,10 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
         TAILQ_FOREACH(ref_astnode,
                       &graph_ent->gen_astnode->ent_relations,
                       an_link) {
-            assert(ER_AST_NODE_TYPE_REFERENCE == ref_astnode->an_type);
+            assert(ref_astnode->an_type == ER_AST_NODE_TYPE_REFERENCE);
             ER_ASTReferenceNode *ref  = (void *)ref_astnode;
             ER_GraphEdge        *edge = calloc(1, sizeof(*edge));
-            assert(NULL != edge);
+            assert(edge != NULL);
 
             GraphRelationResult get_res = graph_get_relation(&graph,
                                                              &ref->ref_relname);
@@ -379,7 +379,7 @@ void ER_graph_place(ER_Graph *graph) {
     ER_i32 col_x[2] = {100, 1200}, col_y[2] = {100, 100};
     int    root_idx = 0;
     HASH_ITER(gen_hh, graph->gr_entities, ent, tmp_ent) {
-        if (0 != ent->gen_layer) {
+        if (ent->gen_layer != 0) {
             continue;
         }
 
