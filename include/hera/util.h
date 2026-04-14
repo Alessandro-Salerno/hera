@@ -44,6 +44,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         _x < _y ? _y : _x;  \
     })
 
+#define ER_ROUND_UP(x, a) (((x) + (a - 1)) & ~(a - 1))
+
 typedef ER_RESULT(ER_u64) ER_WCharLengthResult;
 typedef ER_RESULT(ER_WChar) ER_WCharResult;
 
