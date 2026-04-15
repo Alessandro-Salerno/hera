@@ -27,9 +27,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <ezld/array.h>
+#include <hera/allocator.h>
 #include <hera/result.h>
 #include <hera/types.h>
-#include <ezld/array.h>
 
 typedef enum ER_TokenType {
     ER_TOKEN_TYPE_NONE       = 0,
@@ -66,4 +67,4 @@ typedef struct ER_Token {
 typedef EZLD_ARRAY(ER_Token) ER_TokenList;
 typedef ER_RESULT(ER_TokenList) ER_LexerResult;
 
-ER_LexerResult ER_lexer_run(ER_String input);
+ER_LexerResult ER_lexer_run(ER_String input, ER_Allocator *allocator);

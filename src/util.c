@@ -25,9 +25,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <hera/allocator.h>
 #include <hera/util.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define COLOR_RED   "\x1b[31m"
 #define COLOR_GREEN "\x1b[32m"
@@ -100,4 +102,9 @@ void ER_generic_panic_output(ER_String   input,
     }
 
     fprintf(stderr, COLOR_RESET);
+}
+
+[[noreturn]] void ER_exit(int status) {
+    ER_memory_deinit();
+    exit(status);
 }

@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <bsd/queue.h>
+#include <hera/allocator.h>
 #include <hera/lexer.h>
 #include <hera/types.h>
 
@@ -96,4 +97,4 @@ typedef struct ER_ASTAttributeNode {
 
 typedef ER_RESULT(ER_ASTRootNode) ER_ParserResult;
 
-ER_ParserResult ER_parser_run(ER_TokenList tokens, ER_String input);
+ER_ParserResult ER_parser_run(ER_TokenList tokens, ER_Allocator *allocator);

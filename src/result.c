@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <hera/result.h>
+#include <hera/util.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -45,5 +46,5 @@ void *ER_result_unwrap_impl(ER_Status              status,
     }
 
     fprintf(stderr, "\n");
-    exit(EXIT_FAILURE);
+    ER_exit(EXIT_FAILURE);
 }

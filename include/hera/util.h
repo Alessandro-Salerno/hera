@@ -139,3 +139,5 @@ void ER_generic_panic_output(ER_String   input,    // input string/file contents
                              ER_u64      err_len, // length of the error segment
                              const char *fmt,     // error message printf format
                              ...);
+
+[[noreturn]] void ER_exit(int status);

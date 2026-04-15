@@ -35,9 +35,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdbool.h>
 
 typedef struct ParserState {
-    ER_TokenList par_tokens;
-    ER_u64       par_index;
-    ER_String    par_input;
+    ER_Allocator *par_allocator;
+    ER_TokenList  par_tokens;
+    ER_u64        par_index;
 } ParserState;
 
 typedef ER_RESULT(ER_Token) ParserExpectResult;
@@ -77,8 +77,9 @@ static ParserNodeResult parser_node_ok(ER_ASTNode *node) {
 static void parser_panic_handler(void *arg) {
     ParserState *parser = arg;
     ER_Token     tok    = parser_peek(parser);
+    ER_String    input  = ER_STRING_SUP(tok.tok_value, tok.tok_off);
 
-    ER_generic_panic_output(parser->par_input,
+    ER_generic_panic_output(input,
                             tok.tok_row,
                             tok.tok_col,
                             tok.tok_rowstart,
@@ -89,9 +90,8 @@ static void parser_panic_handler(void *arg) {
 }
 
 static ER_ParserResult parser_panic(ParserState *parser) {
-    ParserState *snapshot = calloc(1, sizeof(*snapshot));
-    assert(snapshot != NULL);
-    *snapshot = *parser;
+    ParserState *snapshot = ER_malloc(parser->par_allocator, sizeof(*snapshot));
+    *snapshot             = *parser;
 
     return (ER_ParserResult){.res_status       = ER_STATUS_PANIC,
                              .res_panicarg     = snapshot,
@@ -109,10 +109,11 @@ ParserNodeResult parser_do_attribute(ParserState *parser) {
     }
 
     ER_Token             name_tok = ER_RESULT_GET(name_tok_res);
-    ER_ASTAttributeNode *node     = calloc(1, sizeof(*node));
-    assert(node != NULL);
-    node->atr_node.an_type = ER_AST_NODE_TYPE_ATTRIBUTE;
-    node->atr_name         = name_tok;
+    ER_ASTAttributeNode *node     = ER_calloc(parser->par_allocator,
+                                          1,
+                                          sizeof(*node));
+    node->atr_node.an_type        = ER_AST_NODE_TYPE_ATTRIBUTE;
+    node->atr_name                = name_tok;
 
     if (parser_matches_types(parser, ER_TOKEN_TYPE_KEY)) {
         node->atr_flags |= ER_ATTRIBUTE_FLAGS_KEY;
@@ -131,7 +132,9 @@ ParserNodeResult parser_do_reference(ParserState *parser) {
 
     ER_Token name_tok = ER_RESULT_GET(name_tok_res);
 
-    ER_ASTReferenceNode *reference = calloc(1, sizeof(*reference));
+    ER_ASTReferenceNode *reference = ER_calloc(parser->par_allocator,
+                                               1,
+                                               sizeof(*reference));
     reference->ref_node.an_type    = ER_AST_NODE_TYPE_REFERENCE;
     reference->ref_relname         = name_tok;
 
@@ -187,10 +190,11 @@ ParserNodeResult parser_do_entity(ParserState *parser) {
     }
 
     ER_Token          name_tok = ER_RESULT_GET(name_tok_res);
-    ER_ASTEntityNode *entity   = calloc(1, sizeof(*entity));
-    assert(entity != NULL);
-    entity->ent_node.an_type = ER_AST_NODE_TYPE_ENTITY;
-    entity->ent_name         = name_tok;
+    ER_ASTEntityNode *entity   = ER_calloc(parser->par_allocator,
+                                         1,
+                                         sizeof(*entity));
+    entity->ent_node.an_type   = ER_AST_NODE_TYPE_ENTITY;
+    entity->ent_name           = name_tok;
     TAILQ_INIT(&entity->ent_relations);
     TAILQ_INIT(&entity->ent_attributes);
 
@@ -308,7 +312,9 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
 
     ER_Token name_tok = ER_RESULT_GET(name_tok_res);
 
-    ER_ASTRelationNode *relation = calloc(1, sizeof(*relation));
+    ER_ASTRelationNode *relation = ER_calloc(parser->par_allocator,
+                                             1,
+                                             sizeof(*relation));
     relation->rel_node.an_type   = ER_AST_NODE_TYPE_RELATION;
     relation->rel_name           = name_tok;
     TAILQ_INIT(&relation->rel_attributes);
@@ -359,11 +365,11 @@ ParserNodeResult parser_do_relation(ParserState *parser) {
     return parser_node_ok((ER_ASTNode *)relation);
 }
 
-ER_ParserResult ER_parser_run(ER_TokenList tokens, ER_String input) {
+ER_ParserResult ER_parser_run(ER_TokenList tokens, ER_Allocator *allocator) {
     ParserState parser = {0};
     assert(!EZLD_ARRAY_IS_EMPTY(tokens));
-    parser.par_tokens = tokens;
-    parser.par_input  = input;
+    parser.par_tokens    = tokens;
+    parser.par_allocator = allocator;
 
     ER_ASTRootNode root;
     root.rt_node.an_type = ER_AST_NODE_TYPE_ROOT;

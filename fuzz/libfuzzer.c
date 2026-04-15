@@ -25,6 +25,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <hera/allocator.h>
 #include <hera/graph.h>
 #include <hera/lexer.h>
 #include <hera/parser.h>
@@ -32,28 +33,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-    ER_String input = {.str_buf = (const char *)data, .str_len = size};
+    ER_memory_init();
 
-    ER_LexerResult lex_res = ER_lexer_run(input);
+    ER_Allocator *allocator = ER_allocator_init();
+    ER_String     input     = {.str_buf = (const char *)data, .str_len = size};
+
+    ER_LexerResult lex_res = ER_lexer_run(input, allocator);
     if (!ER_RESULT_OK(lex_res)) {
-        return 0;
+        goto exit;
     }
 
     ER_TokenList tokens = ER_RESULT_GET(lex_res);
 
-    ER_ParserResult par_res = ER_parser_run(tokens, input);
+    ER_ParserResult par_res = ER_parser_run(tokens, allocator);
     if (!ER_RESULT_OK(par_res)) {
-        return 0;
+        goto exit;
     }
 
     ER_ASTRootNode ast_root  = ER_RESULT_GET(par_res);
-    ER_GraphResult graph_res = ER_graph_compute(&ast_root);
+    ER_GraphResult graph_res = ER_graph_compute(&ast_root, allocator);
     if (!ER_RESULT_OK(graph_res)) {
-        return 0;
+        goto exit;
     }
 
     ER_Graph graph = ER_RESULT_GET(graph_res);
     ER_graph_place(&graph);
 
+exit:
+    ER_memory_deinit();
     return 0;
 }

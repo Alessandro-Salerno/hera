@@ -49,7 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // NOTE: globals are fine because the application is single-threaded and these
 // are only accessible within this translation unit
-static ER_Allocator *s_global_allocator;
+static ER_Allocator *s_global_allocator = NULL;
 static TAILQ_HEAD(, ER_Allocator) s_allocators;
 
 static inline ER_u64 allocator_round_size(ER_u64 size) {
@@ -210,7 +210,6 @@ void ER_global_free(void *ptr) {
 void ER_memory_init(void) {
     TAILQ_INIT(&s_allocators);
     s_global_allocator = ER_allocator_init();
-    atexit(ER_memory_deinit);
 }
 
 // NOTE: atexit() is used on this so to guarantee that all memory allocated
@@ -220,4 +219,5 @@ void ER_memory_deinit(void) {
     TAILQ_FOREACH_SAFE(curr, &s_allocators, a_link, _) {
         ER_allocator_deinit(curr);
     }
+    s_global_allocator = NULL;
 }

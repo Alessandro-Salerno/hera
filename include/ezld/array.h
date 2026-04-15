@@ -28,7 +28,11 @@
 
 #pragma once
 
+// EDIT: changes to this file made for Hear include: changing macro
+// capitalization and using Hera's allocator
+
 #include <assert.h>
+#include <hera/allocator.h>
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -49,8 +53,6 @@
                      &(arr).cap,          \
                      sizeof(*(arr).buf)), \
      &((arr).buf[(arr).len - 1]))
-#define EZLD_ARRAY_FREE(arr) \
-    free((arr).buf), (arr).buf = NULL, (arr).len = 0, (arr).cap = 0
 #define EZLD_CONTAINER_PUSH(cont) ezld_array_push((cont).arr)
 #define EZLD_ARRAY_FIRST(arr)     ((arr).buf[0])
 #define EZLD_ARRAY_LAST(arr)      ((arr).buf[(arr).len - 1])
@@ -62,12 +64,11 @@ static inline size_t
 ezld_array_grow(void **buf, size_t *len, size_t *cap, size_t elemsz) {
     if (0 == *cap) {
         *cap = 8;
-        *buf = calloc(elemsz, *cap);
+        *buf = ER_global_calloc(elemsz, *cap);
     } else if (*len == *cap) {
         *cap *= 2;
-        *buf = realloc(*buf, elemsz * *cap);
+        *buf = ER_global_realloc(*buf, elemsz * *cap);
     }
-    assert(NULL != *buf);
     (*len)++;
     return (*len) - 1;
 }

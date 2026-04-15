@@ -24,6 +24,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef UTHASH_H
 #define UTHASH_H
 
+// EDIT: using Hera's allocator
+#include <hera/allocator.h>
+#define uthash_malloc(sz) ER_global_malloc(sz)
+#define uthash_free(ptr, sz) ER_global_free(ptr)
+
+
 #define UTHASH_VERSION 2.3.0
 
 #include <string.h>   /* memcmp, memset, strlen */

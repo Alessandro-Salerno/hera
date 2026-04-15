@@ -28,10 +28,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <bsd/queue.h>
+#include <ezld/array.h>
+#include <hera/allocator.h>
 #include <hera/parser.h>
 #include <hera/result.h>
 #include <hera/types.h>
-#include <ezld/array.h>
 #include <uthash/uthash.h>
 
 typedef struct ER_GraphEntity   ER_GraphEntity;
@@ -84,5 +85,6 @@ typedef struct ER_Graph {
 
 typedef ER_RESULT(ER_Graph) ER_GraphResult;
 
-ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root);
+ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root,
+                                ER_Allocator   *allocator);
 void           ER_graph_place(ER_Graph *graph);

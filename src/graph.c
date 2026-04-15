@@ -32,6 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdbool.h>
 #include <stdlib.h>
 
+typedef struct GraphState {
+    ER_Graph      gs_graph;
+    ER_Allocator *gs_allocator;
+} GraphState;
+
 typedef ER_RESULT(ER_GraphEntity *) GraphEntityResult;
 typedef ER_RESULT(ER_GraphRelation *) GraphRelationResult;
 
@@ -96,10 +101,10 @@ static void graph_cycle_panic_handler(void *arg) {
         ER_STRING_PRINTF(spec->tok_value));
 }
 
-static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_Token *name) {
+static GraphEntityResult graph_get_entity(GraphState *graph, ER_Token *name) {
     ER_GraphEntity *ent = NULL;
     HASH_FIND(gen_hh,
-              graph->gr_entities,
+              graph->gs_graph.gr_entities,
               &name->tok_value,
               sizeof(name->tok_value),
               ent);
@@ -109,7 +114,7 @@ static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_Token *name) {
     }
 
     HASH_FIND(gen_hhalias,
-              graph->gr_entaliases,
+              graph->gs_graph.gr_entaliases,
               &name->tok_value,
               sizeof(name->tok_value),
               ent);
@@ -123,10 +128,11 @@ static GraphEntityResult graph_get_entity(ER_Graph *graph, ER_Token *name) {
                                .res_panichandler = graph_unknown_panic_handler};
 }
 
-static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_Token *name) {
+static GraphRelationResult graph_get_relation(GraphState *graph,
+                                              ER_Token   *name) {
     ER_GraphRelation *rel = NULL;
     HASH_FIND(gre_hh,
-              graph->gr_relations,
+              graph->gs_graph.gr_relations,
               &name->tok_value,
               sizeof(name->tok_value),
               rel);
@@ -137,7 +143,7 @@ static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_Token *name) {
     }
 
     HASH_FIND(gre_hhalias,
-              graph->gr_relaliases,
+              graph->gs_graph.gr_relaliases,
               &name->tok_value,
               sizeof(name->tok_value),
               rel);
@@ -153,7 +159,7 @@ static GraphRelationResult graph_get_relation(ER_Graph *graph, ER_Token *name) {
         .res_panichandler = graph_unknown_panic_handler};
 }
 
-static GraphEntityResult graph_add_entity(ER_Graph         *graph,
+static GraphEntityResult graph_add_entity(GraphState       *graph,
                                           ER_ASTEntityNode *entity) {
     GraphEntityResult get_res = graph_get_entity(graph, &entity->ent_name);
     if (ER_RESULT_OK(get_res)) {
@@ -163,20 +169,21 @@ static GraphEntityResult graph_add_entity(ER_Graph         *graph,
             .res_panichandler = graph_redefined_panic_handler};
     }
 
-    ER_GraphEntity *graph_entity = calloc(1, sizeof(*graph_entity));
-    assert(graph_entity != NULL);
-    graph_entity->gen_astnode = entity;
+    ER_GraphEntity *graph_entity = ER_calloc(graph->gs_allocator,
+                                             1,
+                                             sizeof(*graph_entity));
+    graph_entity->gen_astnode    = entity;
     TAILQ_INIT(&graph_entity->gen_specifiers);
 
     HASH_ADD(gen_hh,
-             graph->gr_entities,
+             graph->gs_graph.gr_entities,
              gen_astnode->ent_name.tok_value,
              sizeof(ER_String),
              graph_entity);
 
     if (entity->ent_flags & ER_ENTITY_FLAGS_ALIAS) {
         HASH_ADD(gen_hhalias,
-                 graph->gr_entaliases,
+                 graph->gs_graph.gr_entaliases,
                  gen_astnode->ent_alias.tok_value,
                  sizeof(ER_String),
                  graph_entity);
@@ -186,7 +193,7 @@ static GraphEntityResult graph_add_entity(ER_Graph         *graph,
                                .res_val    = graph_entity};
 }
 
-static GraphRelationResult graph_add_relation(ER_Graph           *graph,
+static GraphRelationResult graph_add_relation(GraphState         *graph,
                                               ER_ASTRelationNode *relation) {
     GraphRelationResult get_res = graph_get_relation(graph,
                                                      &relation->rel_name);
@@ -197,20 +204,21 @@ static GraphRelationResult graph_add_relation(ER_Graph           *graph,
             .res_panichandler = graph_redefined_panic_handler};
     }
 
-    ER_GraphRelation *graph_relation = calloc(1, sizeof(*graph_relation));
-    assert(graph_relation != NULL);
-    graph_relation->gre_astnode = relation;
+    ER_GraphRelation *graph_relation = ER_calloc(graph->gs_allocator,
+                                                 1,
+                                                 sizeof(*graph_relation));
+    graph_relation->gre_astnode      = relation;
     TAILQ_INIT(&graph_relation->gre_edges);
 
     HASH_ADD(gre_hh,
-             graph->gr_relations,
+             graph->gs_graph.gr_relations,
              gre_astnode->rel_name.tok_value,
              sizeof(ER_String),
              graph_relation);
 
     if (relation->rel_flags & ER_RELATION_FLAGS_ALIAS) {
         HASH_ADD(gre_hhalias,
-                 graph->gr_relaliases,
+                 graph->gs_graph.gr_relaliases,
                  gre_astnode->rel_alias.tok_value,
                  sizeof(ER_String),
                  graph_relation);
@@ -220,8 +228,9 @@ static GraphRelationResult graph_add_relation(ER_Graph           *graph,
                                  .res_val    = graph_relation};
 }
 
-static inline ER_GraphResult graph_ok(ER_Graph graph) {
-    return (ER_GraphResult){.res_status = ER_STATUS_OK, .res_val = graph};
+static inline ER_GraphResult graph_ok(GraphState graph) {
+    return (ER_GraphResult){.res_status = ER_STATUS_OK,
+                            .res_val    = graph.gs_graph};
 }
 
 static bool graph_has_cycle(ER_GraphEntity *entity) {
@@ -245,10 +254,12 @@ static ER_GraphResult graph_panic_cycle(ER_GraphEntity *entity) {
                             .res_panichandler = graph_cycle_panic_handler};
 }
 
-ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
+ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root,
+                                ER_Allocator   *allocator) {
     // NOTE: zeroing this structure causes pointer fields to become NULL, which
     // constitutes implicit initialization as per uthash documentation
-    ER_Graph graph = {0};
+    GraphState graph   = {0};
+    graph.gs_allocator = allocator;
 
     // add entities to the entity hashmap
     ER_ASTNode *ast_ent;
@@ -276,7 +287,7 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
 
     // link entities to their parent
     ER_GraphEntity *graph_ent, *graph_ent_tmp;
-    HASH_ITER(gen_hh, graph.gr_entities, graph_ent, graph_ent_tmp) {
+    HASH_ITER(gen_hh, graph.gs_graph.gr_entities, graph_ent, graph_ent_tmp) {
         // relation handling
         ER_ASTNode *ref_astnode;
         TAILQ_FOREACH(ref_astnode,
@@ -284,8 +295,7 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
                       an_link) {
             assert(ref_astnode->an_type == ER_AST_NODE_TYPE_REFERENCE);
             ER_ASTReferenceNode *ref  = (void *)ref_astnode;
-            ER_GraphEdge        *edge = calloc(1, sizeof(*edge));
-            assert(edge != NULL);
+            ER_GraphEdge        *edge = ER_calloc(allocator, 1, sizeof(*edge));
 
             GraphRelationResult get_res = graph_get_relation(&graph,
                                                              &ref->ref_relname);
@@ -319,7 +329,7 @@ ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root) {
     }
 
     // check loops
-    HASH_ITER(gen_hh, graph.gr_entities, graph_ent, graph_ent_tmp) {
+    HASH_ITER(gen_hh, graph.gs_graph.gr_entities, graph_ent, graph_ent_tmp) {
         if (graph_has_cycle(graph_ent)) {
             return graph_panic_cycle(graph_ent);
         }

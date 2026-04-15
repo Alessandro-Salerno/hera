@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <assert.h>
+#include <hera/allocator.h>
 #include <hera/graph.h>
 #include <hera/lexer.h>
 #include <hera/parser.h>
@@ -41,6 +42,8 @@ int main(int argc, const char *const argv[]) {
         return EXIT_FAILURE;
     }
 
+    ER_memory_init();
+
     const char *source_path = argv[1];
     FILE       *source_file = fopen(source_path, "r");
 
@@ -53,18 +56,20 @@ int main(int argc, const char *const argv[]) {
     long source_len = ftell(source_file);
     rewind(source_file);
 
-    char *source_buf = malloc(source_len + 1);
-    assert(source_buf != NULL);
+    ER_Allocator *allocator = ER_allocator_init();
+
+    char *source_buf = ER_malloc(allocator, source_len + 1);
     fread(source_buf, 1, source_len, source_file);
+    fclose(source_file);
 
     ER_String s = (ER_String){.str_buf = source_buf, .str_len = source_len};
-    ER_LexerResult lex_res = ER_lexer_run(s);
-    ER_TokenList   tokens  = *(ER_TokenList *)ER_RESULT_UNWRAP(lex_res);
+    ER_LexerResult lex_res = ER_lexer_run(s, allocator);
+    ER_TokenList   tokens  = *ER_RESULT_UNWRAP(lex_res);
 
-    ER_ParserResult par_res  = ER_parser_run(tokens, s);
+    ER_ParserResult par_res  = ER_parser_run(tokens, allocator);
     ER_ASTRootNode *ast_root = ER_RESULT_UNWRAP(par_res);
 
-    ER_GraphResult graph_res = ER_graph_compute(ast_root);
+    ER_GraphResult graph_res = ER_graph_compute(ast_root, allocator);
     ER_Graph      *graph     = ER_RESULT_UNWRAP(graph_res);
 
     ER_graph_place(graph);

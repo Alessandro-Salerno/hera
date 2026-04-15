@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <assert.h>
+#include <hera/allocator.h>
 #include <hera/lexer.h>
 #include <hera/util.h>
 #include <stdbool.h>
@@ -50,12 +51,13 @@ struct LexerInstruction {
 };
 
 typedef struct LexerState {
-    ER_String ls_input;
-    ER_u64    ls_next;
-    ER_u64    ls_row;
-    ER_u64    ls_col;
-    ER_u64    ls_bincol;
-    ER_u64    ls_rowstart;
+    ER_Allocator *ls_allocator;
+    ER_String     ls_input;
+    ER_u64        ls_next;
+    ER_u64        ls_row;
+    ER_u64        ls_col;
+    ER_u64        ls_bincol;
+    ER_u64        ls_rowstart;
 } LexerState;
 
 // Utilities
@@ -151,9 +153,8 @@ static void lexer_panic_handler(void *arg) {
 }
 
 static ER_LexerResult lexer_panic(LexerState *lexer) {
-    LexerState *snapshot = calloc(1, sizeof(*snapshot));
-    assert(snapshot != NULL);
-    *snapshot = *lexer;
+    LexerState *snapshot = ER_malloc(lexer->ls_allocator, sizeof(*snapshot));
+    *snapshot            = *lexer;
 
     return (ER_LexerResult){.res_status       = ER_STATUS_PANIC,
                             .res_panicarg     = snapshot,
@@ -390,9 +391,10 @@ static LexerInstruction lexer_number_handler(ER_WChar c) {
                               .li_toktype    = ER_TOKEN_TYPE_NUMBER};
 }
 
-ER_LexerResult ER_lexer_run(ER_String input) {
+ER_LexerResult ER_lexer_run(ER_String input, ER_Allocator *allocator) {
     LexerCharHandler *handler = lexer_base_handler;
     LexerState        lexer   = {0};
+    lexer.ls_allocator        = allocator;
     lexer.ls_input            = input;
     lexer_reset_row(&lexer);
     lexer.ls_rowstart = 0;
@@ -408,7 +410,6 @@ ER_LexerResult ER_lexer_run(ER_String input) {
     while (lexer_can_peek(&lexer)) {
         ER_WCharResult fetch_result = lexer_peek(&lexer);
         if (!ER_RESULT_OK(fetch_result)) {
-            EZLD_ARRAY_FREE(tokens);
             return lexer_panic(&lexer);
         }
 
@@ -433,7 +434,6 @@ ER_LexerResult ER_lexer_run(ER_String input) {
 
         // if the handler threw an error
         if (instruction.li_handler == NULL) {
-            EZLD_ARRAY_FREE(tokens);
             return lexer_panic(&lexer);
         }
 

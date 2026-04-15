@@ -40,12 +40,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef void ER_ResultPanicHandler(void *arg);
 
-#define ER_RESULT_UNWRAP(result)                     \
-    ER_result_unwrap_impl((result).res_status,       \
-                          &(result).res_val,         \
-                          (result).res_err,          \
-                          (result).res_panichandler, \
-                          (result).res_panicarg)
+#define ER_RESULT_UNWRAP(result)                      \
+    (ER_result_unwrap_impl((result).res_status,       \
+                           &(result).res_val,         \
+                           (result).res_err,          \
+                           (result).res_panichandler, \
+                           (result).res_panicarg),    \
+     &(result).res_val)
 
 #define ER_RESULT_STATUS(result) ((result).res_status)
 #define ER_RESULT_OK(result)     (ER_RESULT_STATUS(result) == ER_STATUS_OK)
