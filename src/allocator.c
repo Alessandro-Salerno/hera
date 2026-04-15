@@ -25,17 +25,27 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <assert.h>
 #include <hera/allocator.h>
 #include <hera/util.h>
 #include <stdalign.h>
 #include <stdlib.h>
 
+// NOTE: in general, we don't handle allocation failure, because on most modern
+// systems, allocations either don't fail (process is put to sleep until memory
+// is available), or they fail in a way we can't detect (i.e., the process is
+// killed by the OOM killer) and bsides, the memory overhead would need to be so
+// large that no recovery mechanism would make sense
+
 #define INITIAL_POOL_SIZE  (16 * 1024)
 #define POOL_GROWTH_FACTOR 2
 #define MAX_OBJECT_SIZE    4096
-#define HEADER_PADDING \
-    ER_ROUND_UP(sizeof(ER_AllocatorHeader), sizeof(max_align_t))
+
+// NOTE: we define padding as the difference between the aligned size of the
+// header and its actual size, so to guarantee that N + sizeof() +
+// HEADER_PADDING is always aligned if N is aligned
+#define HEADER_PADDING                                              \
+    (ER_ROUND_UP(sizeof(ER_AllocatorHeader), sizeof(max_align_t)) - \
+     sizeof(ER_AllocatorHeader))
 
 // NOTE: globals are fine because the application is single-threaded and these
 // are only accessible within this translation unit
@@ -44,6 +54,12 @@ static TAILQ_HEAD(, ER_Allocator) s_allocators;
 
 static inline ER_u64 allocator_round_size(ER_u64 size) {
     return ER_ROUND_UP(size, sizeof(max_align_t));
+}
+
+static inline void allocator_checK(void *ptr) {
+    if (ptr == NULL) {
+        abort();
+    }
 }
 
 static inline ER_AllocatorHeader *
@@ -62,7 +78,7 @@ static ER_AllocatorHeader *allocator_new_pool(ER_Allocator *allocator) {
     ER_AllocatorHeader *new_pool = calloc(1,
                                           sizeof(*new_pool) + HEADER_PADDING +
                                               pool_size);
-    assert(new_pool != NULL);
+    allocator_checK(new_pool);
     new_pool->ah_size = pool_size;
     TAILQ_INSERT_TAIL(&allocator->a_pools, new_pool, ah_link);
 
@@ -93,7 +109,7 @@ static void *allocator_allocate_object(ER_Allocator *allocator, ER_u64 size) {
     ER_AllocatorHeader *object_header = calloc(1,
                                                sizeof(*object_header) +
                                                    HEADER_PADDING + size);
-    assert(object_header != NULL);
+    allocator_checK(object_header);
     object_header->ah_size = size;
     TAILQ_INSERT_TAIL(&allocator->a_objects, object_header, ah_link);
     return allocator_get_header_buffer(object_header);
@@ -101,10 +117,11 @@ static void *allocator_allocate_object(ER_Allocator *allocator, ER_u64 size) {
 
 ER_Allocator *ER_allocator_init(void) {
     ER_Allocator *allocator = calloc(1, sizeof(*allocator));
-    assert(allocator != NULL);
+    allocator_checK(allocator);
     TAILQ_INIT(&allocator->a_pools);
     TAILQ_INIT(&allocator->a_objects);
     TAILQ_INSERT_TAIL(&s_allocators, allocator, a_link);
+
     return allocator;
 }
 
@@ -135,18 +152,22 @@ void *ER_malloc(ER_Allocator *allocator, ER_u64 size) {
     if (!TAILQ_EMPTY(&allocator->a_pools)) {
         ER_AllocatorHeader *pool = allocator_current_pool(allocator);
         if (pool->ah_size - pool->ah_next >= rounded_size) {
-            void *ret = allocator_get_header_buffer(pool) + pool->ah_next;
+            void *ret = (unsigned char *)allocator_get_header_buffer(pool) +
+                        pool->ah_next;
             pool->ah_next += rounded_size;
             return ret;
         }
     }
 
     ER_AllocatorHeader *new_pool = allocator_new_pool(allocator);
+    new_pool->ah_next += rounded_size;
     return allocator_get_header_buffer(new_pool);
 }
 
 // TODO: perform overflow check
 void *ER_calloc(ER_Allocator *allocator, ER_u64 n, ER_u64 size) {
+    // NOTE: we don't need zeroing here because buffers are always allocated
+    // with calloc() by the ER_malloc implementation
     return ER_malloc(allocator, n * size);
 }
 
@@ -156,6 +177,7 @@ void *ER_global_malloc(ER_u64 size) {
 
 // TODO: perform overflow check (same as above)
 void *ER_global_calloc(ER_u64 n, ER_u64 size) {
+    // NOTE: same as for ER_calloc
     return ER_global_malloc(n * size);
 }
 
@@ -169,7 +191,7 @@ void *ER_global_realloc(void *buf, ER_u64 new_size) {
     // NOTE: we can reallocate now because the old pool was removed from the
     // object list
     header = realloc(header, sizeof(*header) + HEADER_PADDING + new_size);
-    assert(header != NULL);
+    allocator_checK(header);
     header->ah_size = new_size;
     TAILQ_INSERT_TAIL(&s_global_allocator->a_objects, header, ah_link);
 
@@ -184,6 +206,7 @@ void ER_global_free(void *ptr) {
     }
 }
 
+// NOTE: this must be called before any other calls are made
 void ER_memory_init(void) {
     TAILQ_INIT(&s_allocators);
     s_global_allocator = ER_allocator_init();
