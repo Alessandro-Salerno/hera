@@ -1,6 +1,6 @@
 # Language Specification
 
-This documentation page the structure, syntax, and formal grammar of the Hera
+This documentation page describes the structure, syntax, and formal grammar of the Hera
 language.
 
 ## Structural elements

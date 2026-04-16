@@ -11,6 +11,7 @@ TREESITTER_PARSER := treesitter-hera.so
 CC := cc
 LD := $(CC)
 FUZZ_CC := clang
+PREFIX := /usr/bin
 
 CFLAGS := \
 	-pipe\
@@ -77,11 +78,11 @@ obj/src/%.c.o: src/%.c GNUmakefile
 
 .PHONY: install
 install: tool
-	cp bin/$(TOOL_BINARY) /usr/bin
+	cp bin/$(TOOL_BINARY) $(PREFIX)
 
 .PHONY: uninstall
 uninstall:
-	rm /usr/bin/$(TOOL_BINARY)
+	rm $(PREFIX)/$(TOOL_BINARY)
 
 .PHONY: fuzz
 fuzz: bin/$(FUZZ_BINARY)
