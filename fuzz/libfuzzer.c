@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <hera/allocator.h>
 #include <hera/graph.h>
+#include <hera/layout.h>
 #include <hera/lexer.h>
 #include <hera/parser.h>
 #include <stddef.h>
@@ -57,7 +58,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     ER_Graph graph = ER_RESULT_GET(graph_res);
-    ER_graph_place(&graph);
+    ER_layout_place(&graph);
 
 exit:
     ER_memory_deinit();
