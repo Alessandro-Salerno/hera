@@ -162,12 +162,15 @@ The graph resolver employs an internal four-stage pipeline:
     added to the relation alias hash table 
 3. **Reference resolution:** The resolver walks the newly-created entity hash table.
     For each entity, it performs two sub-steps:
+
     3.1. **Relation reference resolution:** For each of the entity's relation references,
         the resolver instantiates an edge representation (`ER_GraphEdge`) linking the
         entity and the relationship directly
+
     3.2. **Parent reference resolution:** If the entity specializes another entity,
         the resolver establishes a direct pointer-based link between the two
-4. **Acyclicity enforcement:** The resolver walks the entity hash table and checks
+
+5. **Acyclicity enforcement:** The resolver walks the entity hash table and checks
     the specialization hierarchy of each entity, ensuring it does not create a cycle
 
 ### Layout engine
