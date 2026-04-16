@@ -1,0 +1,21 @@
+// Hello World - Minimal Example
+// The simplest possible ER diagram: two entities with a one-to-many relationship
+// Great for learning the basic syntax!
+
+entity Author {
+    attribute Name key;
+    attribute Email;
+
+    relation Writes (1, N);
+}
+
+entity Book {
+    attribute ISBN key;
+    attribute Title;
+    attribute "Publication Year";
+
+    relation Writes (0, 1);
+}
+
+relation Writes {
+}

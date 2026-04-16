@@ -1,0 +1,68 @@
+// Task Management System
+// Demonstrates various relationship types: one-to-many, many-to-many, and self-referential relationships
+// Shows optional attributes and multiple attributes on relations
+
+entity Project {
+    attribute "Project ID" key;
+    attribute Name;
+    attribute Description;
+    attribute Status;
+
+    relation Contains (1, N);
+    relation TeamMembers (0, N);
+}
+
+entity Task {
+    attribute "Task ID" key;
+    attribute Title;
+    attribute Description optional;
+    attribute "Due Date";
+    attribute Status;
+    attribute Priority;
+
+    relation Contains (1, 1);
+    relation AssignedTo (0, N);
+    relation Blocks (0, N);
+    relation Comment (0, N);
+}
+
+entity TeamMember {
+    attribute "Member ID" key;
+    attribute Name;
+    attribute Email;
+    attribute Role;
+
+    relation TeamMembers (0, N);
+    relation AssignedTo (0, N);
+    relation Comment (0, N);
+}
+
+entity Comment {
+    attribute "Comment ID" key;
+    attribute Text;
+    attribute "Created Date";
+    attribute "Updated Date" optional;
+
+    relation Comment (1, 1);
+}
+
+relation Contains {
+}
+
+relation TeamMembers {
+    attribute "Join Date";
+    attribute Role;
+}
+
+relation AssignedTo {
+    attribute "Assignment Date";
+    attribute "Hours Estimated";
+    attribute "Hours Spent" optional;
+}
+
+relation Blocks {
+    attribute Reason;
+}
+
+relation Comment {
+}

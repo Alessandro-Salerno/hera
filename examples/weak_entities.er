@@ -1,0 +1,22 @@
+// Weak Entities Example
+// Demonstrates weak entities: entities that depend on other entities for their identity
+// A building number only makes sense in the context of a specific street
+
+entity Street {
+    attribute Name key;
+    attribute City;
+    attribute Country;
+
+    relation Contains (1, N) key;
+}
+
+entity Building {
+    attribute Number key;
+    attribute "Num Floors";
+    attribute Material;
+
+    relation Contains (1, 1) key;
+}
+
+relation Contains {
+}
