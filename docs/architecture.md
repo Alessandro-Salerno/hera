@@ -22,7 +22,7 @@ Currently, Hera employs a five-stage pipeline to turn input files into diagrams:
     as a graph of entities and relationships. As part of this process, it also validates
     references and names
 4. **Layout generation:** This pass is performed by the [layout engine](../src/layout.c).
-    It changes the graph in-place, giving each concrete physical characteristics,
+    It changes the graph in-place, giving each node concrete physical characteristics,
     such as position and size
 5. **SVG emission:** This pass is performed by the [SVG emitter](../src/svg.c).
     It walks the graph and outputs the SVG representation to Standard Output
@@ -110,7 +110,7 @@ as per its signature, instructing the main loop on:
     - **Discard:** If the value is `LEXER_ACTION_DISCARD`, the current token is
         reset without adding it to the token list
     - **Ignore:** If the value is `LEXER_ACTION_IGNORE`, no action is taken on
-        on the current token. This is used to accumulate characters into a token
+        the current token. This is used to accumulate characters into a token
     - **Push:** If the value is `LEXER_ACTION_PUSH`, the current token is added
         to the token list and its contents are reset to prepare for the next token.
         In this case, the `li_toktype` field acts as a hint of the final token
@@ -198,7 +198,7 @@ The allocator provides two main interfaces:
     to implement `realloc`-heavy structures, such as dynamic arrays, due to the
     lack of a proper local `realloc` interface. The global interface is designed
     to act externally identical to standard interfaces, thus some optimizations
-    are not present.
+    are not present
 
 > [!IMPORTANT]
 > Hera treats memory allocation as an axiom. Calls to any allocation interface
