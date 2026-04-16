@@ -28,7 +28,7 @@
 
 #pragma once
 
-// EDIT: changes to this file made for Hear include: changing macro
+// EDIT: changes to this file made for Hera include: changing macro
 // capitalization and using Hera's allocator
 
 #include <assert.h>

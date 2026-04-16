@@ -75,8 +75,7 @@ module.exports = grammar({
       'relation',
       field('name', choice($.identifier, $.string)),
       $.cardinality,
-      optional('key'),
-      optional('optional')
+      optional('key')
     ),
 
     cardinality: $ => seq(
