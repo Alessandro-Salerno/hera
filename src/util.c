@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <hera/allocator.h>
 #include <hera/util.h>
+#include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,7 +63,7 @@ void ER_generic_panic_output(ER_String   input,
 
     // --- Location ---
     fprintf(stderr,
-            COLOR_CYAN "==> line %lu, column %lu: " COLOR_RESET,
+            COLOR_CYAN "==> line %" PRIu64 ", column %" PRIu64 ": " COLOR_RESET,
             err_line,
             err_col);
 
@@ -77,7 +78,7 @@ void ER_generic_panic_output(ER_String   input,
     fprintf(stderr, "\n");
 
     // Code line
-    fprintf(stderr, " %4lu | ", err_line);
+    fprintf(stderr, " %4" PRIu64 " | ", err_line);
     fwrite(buf + err_lstart, 1, line_len, stderr);
     fprintf(stderr, "\n");
 

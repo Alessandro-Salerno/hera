@@ -9,7 +9,7 @@ VSCODE_EXTENSION := hera.vsix
 TREESITTER_PARSER := treesitter-hera.so
 
 CC := cc
-LD := cc
+LD := $(CC)
 FUZZ_CC := clang
 
 CFLAGS := \
