@@ -59,6 +59,8 @@ An exemption is made to these provisions for files originating from third-partie
     future issues
 - Comments starting with `// NOTE: ` shall be employed to state non-obvious
     characteristics of the file or code block
+- Comments starting with `// EDIT: ` shall be employed to state modifications
+    to third-party code
 
 An exemption is made to these provisions for files originating from third-parties.
 
@@ -67,3 +69,45 @@ An exemption is made to these provisions for files originating from third-partie
     container types when type information is not immediately visibile, as is the
     case, for example, in macros, direct dereferences of function return values,
     and global variables
+
+
+## Diagram conventions
+This section highlights standards and conventions ideally used in the generated
+Entity-Relationship diagram. 
+
+> [!NOTE]
+> This section is not representative of the current state of generated diagrams
+
+- Entities shall be represented as empty rectangles whose content shall be limited
+    to the entity name itself, which shall be placed in the middle of said rectangle
+- Relationships shall be represented as diamonds whose content shall be limited
+    to the relationship name itself, which shall be placed in the middle of said
+    diamond
+- Connections between entities and relationships shall be represented by simple,
+    non-oriented lines. Said lines shall only curve at 90-degree angles. If the
+    reference is marked with a `key` modifier, the connection shall be treated
+    as part of the entity's identifier (as described below)
+- Cardinalities for a given connection shall be placed either above or below the
+    line (depending on space availability) and near the entity to which they're
+    attached. Cardinalities shall follow the format: `(min, max)` as described
+    in the input file
+- Attributes shall be represented as small circles connected the object
+    (entity or relationship) they're declared in. If the attribute is marked
+    with a `key` modifier, it shall be treated as part of the object's identifier
+    (as described below). If not, the above-mentioned circle shall have a black
+    outline and be filled in white
+- Cardinalities for a given attribute shall be placed in the proximity of the line
+    connecting the attribute to its parent object. Cardinalities shall follow the
+    format: `(min, max)`. By default, `(min = 1, max = N)`. If the attribute is
+    marked with the `optional` modifier, `min` shall be lowered to `0`. 
+- If an object component (either an attribute or a relationship reference) is
+    part of the object's identifier, it shall appear with a black circle. Otherwise,
+    the behavior is specified above in the relevant bullets
+- Object identifiers may be composite. In this case, a curve shall be traced
+    between all circles part of the identifier
+- Entities which specialize others shall be connected to their parent by a pointed
+    arrow. If the parent's definition is marked with the `total` modifier, the tip
+    of said arrow shall contain a `T`. Similarly, if the parent's definition is
+    marked with the `exclusive` modifier, the arrow tip shall also contain an `E`.
+    Entities that specialize the same parent should preferably merge their arrows
+    and be visually adjacent, possibly forming a specialization tree
