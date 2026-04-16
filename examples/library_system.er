@@ -1,0 +1,60 @@
+// Library Management System
+// Demonstrates overlapping (non-exclusive) specialization
+// A publication can be both a "PrintedBook" AND "DigitalResource" simultaneously
+
+entity Publication {
+    attribute ISBN key;
+    attribute Title;
+    attribute Author;
+    attribute "Publication Year";
+
+    relation Catalog (0, N);
+}
+
+entity PrintedBook specifies Publication {
+    attribute Pages;
+    attribute Publisher;
+    attribute "Physical Condition";
+
+    relation CheckedOut (0, N);
+}
+
+entity DigitalResource specifies Publication {
+    attribute Format;
+    attribute "File Size";
+    attribute URL;
+
+    relation Downloads (0, N);
+}
+
+entity Member {
+    attribute "Member ID" key;
+    attribute Name;
+    attribute Email;
+    attribute "Membership Date";
+
+    relation CheckedOut (0, N);
+    relation Downloads (0, N);
+}
+
+entity Catalog {
+    attribute "Catalog Entry ID" key;
+    attribute "Stock Level";
+    attribute Location;
+
+    relation Catalog (1, N);
+}
+
+relation Catalog {
+}
+
+relation CheckedOut {
+    attribute "Checkout Date";
+    attribute "Due Date";
+    attribute "Return Date" optional;
+}
+
+relation Downloads {
+    attribute "Download Date";
+    attribute "Times Downloaded";
+}

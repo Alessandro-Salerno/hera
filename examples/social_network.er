@@ -1,0 +1,35 @@
+// Social Network Example
+// Demonstrates many-to-many relationships with attributes
+// Shows how relations can have their own properties (like "Follow Date")
+
+entity User {
+    attribute Username key;
+    attribute Email;
+    attribute "Join Date";
+    attribute Bio optional;
+
+    relation Follows (0, N);
+    relation Posts (0, N);
+    relation Likes (0, N);
+}
+
+entity Post {
+    attribute "Post ID" key;
+    attribute Content;
+    attribute "Creation Date";
+    attribute "Like Count";
+
+    relation Posts (1, 1);
+    relation Likes (0, N);
+}
+
+relation Follows {
+    attribute "Follow Date";
+}
+
+relation Likes {
+    attribute "Like Date";
+}
+
+relation Posts {
+}
