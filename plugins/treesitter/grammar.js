@@ -67,14 +67,16 @@ module.exports = grammar({
     attribute_definition: $ => seq(
       'attribute',
       field('name', choice($.identifier, $.string)),
-      optional('key')
+      optional('key'),
+      optional('optional')
     ),
 
     relation_reference: $ => seq(
       'relation',
       field('name', choice($.identifier, $.string)),
       $.cardinality,
-      optional('key')
+      optional('key'),
+      optional('optional')
     ),
 
     cardinality: $ => seq(

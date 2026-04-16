@@ -117,6 +117,8 @@ ParserNodeResult parser_do_attribute(ParserState *parser) {
 
     if (parser_matches_types(parser, ER_TOKEN_TYPE_KEY)) {
         node->atr_flags |= ER_ATTRIBUTE_FLAGS_KEY;
+    } else if (parser_matches_types(parser, ER_TOKEN_TYPE_OPTIONAL)) {
+        node->atr_flags |= ER_ATTRIBUTE_FLAGS_OPTIONAL;
     }
 
     return parser_node_ok((ER_ASTNode *)node);

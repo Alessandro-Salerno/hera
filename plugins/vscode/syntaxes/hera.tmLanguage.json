@@ -47,7 +47,7 @@
 				},
 				{
 					"name": "keyword.modifier.hera",
-					"match": "\\b(total|exclusive|specifies|key|alias)\\b"
+					"match": "\\b(total|exclusive|specifies|key|optional|alias)\\b"
 				}
 			]
 		},

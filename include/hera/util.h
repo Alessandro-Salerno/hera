@@ -131,13 +131,14 @@ static inline ER_WCharResult ER_char_to_wchar(ER_String s) {
     return (ER_WCharResult){ER_STATUS_OK, .res_val = codepoint};
 }
 
-void ER_generic_panic_output(ER_String   input,    // input string/file contents
-                             ER_u64      err_line, // human line number
-                             ER_u64      err_col,  // human column number
-                             ER_u64      err_lstart, // binary row start index
-                             ER_u64      err_loff,   // binary column number
-                             ER_u64      err_len, // length of the error segment
-                             const char *fmt,     // error message printf format
-                             ...);
+__attribute__((format(printf, 7, 8))) void
+ER_generic_panic_output(ER_String   input,      // input string/file contents
+                        ER_u64      err_line,   // human line number
+                        ER_u64      err_col,    // human column number
+                        ER_u64      err_lstart, // binary row start index
+                        ER_u64      err_loff,   // binary column number
+                        ER_u64      err_len,    // length of the error segment
+                        const char *fmt,        // error message printf format
+                        ...);
 
 [[noreturn]] void ER_exit(int status);

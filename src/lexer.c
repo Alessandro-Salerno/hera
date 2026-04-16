@@ -135,6 +135,8 @@ static ER_TokenType lexer_token_type(ER_String buffer, ER_TokenType hint) {
         return ER_TOKEN_TYPE_EXCLUSIVE;
     } else if (ER_STRING_EQ_LITERAL(buffer, "alias")) {
         return ER_TOKEN_TYPE_ALIAS;
+    } else if (ER_STRING_EQ_LITERAL(buffer, "optional")) {
+        return ER_TOKEN_TYPE_OPTIONAL;
     }
 
     // at this point we assume it is an identifier
