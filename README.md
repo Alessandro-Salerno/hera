@@ -9,7 +9,7 @@
 [issues-shield]: https://img.shields.io/github/issues/Alessandro-Salerno/hera.svg?style=flat-square
 [issues-url]: https://github.com/Alessandro-Salerno/hera/issues
 [license-shield]: https://img.shields.io/github/license/Alessandro-Salerno/hera.svg?style=flat-square
-[license-url]: https://github.com/Alessandro-Salerno/hera/blob/master/LICENSE.txt
+[license-url]: https://github.com/Alessandro-Salerno/hera/blob/main/LICENSE
 
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
