@@ -95,7 +95,7 @@ relation Requirements {
 A collection of example input files is available in the [`examples/`](./examples/) directory.
 
 ## Documentation
-Documentation is available in the [`docs/`](./docs/) directory. Additional information is also available in [`FAQ.md`](./FAQ.md), [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md), [`SECURITY.md`](./SECURITY.md), and [`LICENSE`](./LICENSE).
+Documentation is available in the [`docs/`](./docs/) directory. Additional information is also available in [`FAQ.md`](./FAQ.md), [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md), and [`LICENSE`](./LICENSE).
 
 ## License
 Hera is distributed under the BSD 2-Clause license. This only applies to the core source code and headers of the program. Third-party headers and source files included in this repository may have distinct licenses. The license is always stated at the top of each file.
