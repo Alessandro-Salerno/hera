@@ -3,7 +3,7 @@
 This documentation page provides the necessary instructions to build Hera from source and
 install the resulting binaries and plugins on a target system.
 
-## Build Requirements
+## Build requirements
 The following dependencies are required to build Hera:
 
 ### Mandatory dependencies
