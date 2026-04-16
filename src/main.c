@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <hera/allocator.h>
 #include <hera/graph.h>
+#include <hera/layout.h>
 #include <hera/lexer.h>
 #include <hera/parser.h>
 #include <hera/svg.h>
@@ -72,7 +73,7 @@ int main(int argc, const char *const argv[]) {
     ER_GraphResult graph_res = ER_graph_compute(ast_root, allocator);
     ER_Graph      *graph     = ER_RESULT_UNWRAP(graph_res);
 
-    ER_graph_place(graph);
+    ER_layout_place(graph);
     ER_svg_emit(graph);
 
     return EXIT_SUCCESS;

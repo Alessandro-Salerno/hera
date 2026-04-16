@@ -87,4 +87,3 @@ typedef ER_RESULT(ER_Graph) ER_GraphResult;
 
 ER_GraphResult ER_graph_compute(ER_ASTRootNode *ast_root,
                                 ER_Allocator   *allocator);
-void           ER_graph_place(ER_Graph *graph);
